@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element audit="true" db_object_id="4a109ab542f776279f541e8f1b64bf92" label="Assigner" max_length="40" name="x_1578378_aa_assigner" type="collection"/>
+</database>
