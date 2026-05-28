@@ -1,0 +1,24 @@
+# ServiceNow / sn-tools
+.cache/
+*.log
+
+# Node (if using sn-scripts / build tooling)
+node_modules/
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Local env / secrets — never commit instance creds
+.env
+*.local
+
+# Local tooling — never commit
+.claude/
+CLAUDE.md
+**/CLAUDE.md
+.claude.json
+.aider*
+.cursor/
