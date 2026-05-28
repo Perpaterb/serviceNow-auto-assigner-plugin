@@ -1,7 +1,7 @@
 # User Stories
 
 Stories are grouped into epics. Each has acceptance criteria (AC). "Manager"
-means a user with the scoped `x_aa_auto_assigner.queue_manager` role; "analyst" means
+means a user with the scoped `x_1578378_aa.queue_manager` role; "analyst" means
 an assignment-group member.
 
 ---
@@ -10,7 +10,7 @@ an assignment-group member.
 
 ### A1 — Queue manager role exists
 **As** a platform admin
-**I want** the app to provide a scoped `x_aa_auto_assigner.queue_manager` role
+**I want** the app to provide a scoped `x_1578378_aa.queue_manager` role
 **So that** the right people can configure auto-assigners.
 - AC1: On install, the scoped role exists in the app scope (namespaced to
   avoid clashing with any existing `queue_manager` role on the instance).
@@ -21,7 +21,7 @@ an assignment-group member.
 **I want** to see the auto-assigner(s) configured for my group
 **So that** I have visibility into how my work is distributed.
 - AC1: Opening the app shows only auto-assigners for groups I belong to.
-- AC2: Without `x_aa_auto_assigner.queue_manager`, I see a **stripped read-only
+- AC2: Without `x_1578378_aa.queue_manager`, I see a **stripped read-only
   summary** — status (running/stopped) and the current roster (Working /
   Not-working with shift names) — and no edit affordances.
 

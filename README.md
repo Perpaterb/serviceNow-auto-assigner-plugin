@@ -38,7 +38,15 @@ pull someone off at lunchtime." Auto-Assigner fills exactly that gap.
 | Data             | Custom tables (assigner config, shift templates, roster, activity)|
 | Manager UI       | Service Portal widgets (tabbed shell, Main page, Shift setup)      |
 | Assignment engine| Single Scheduled Job (every N min) — processes assigners sequentially |
-| Security         | Scoped `x_aa_auto_assigner.queue_manager` role + group-membership ACLs       |
+| Security         | Scoped `x_1578378_aa.queue_manager` role + group-membership ACLs       |
+
+> **Note on the scope prefix.** The `x_1578378_` prefix is the vendor prefix
+> assigned to the current Personal Developer Instance and is **locked at app
+> creation**. The app's suffix is `aa`, so the full scope is `x_1578378_aa`.
+> If this app is ever published to a different instance (a paying customer
+> sub-prod, for example), the prefix changes to that org's vendor prefix and
+> every `x_1578378_aa` reference in the codebase will need a one-shot
+> find-replace to the new value. The suffix `aa` stays.
 
 ## Repo layout
 

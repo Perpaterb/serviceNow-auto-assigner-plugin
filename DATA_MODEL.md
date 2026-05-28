@@ -1,6 +1,6 @@
 # Data Model
 
-All tables live in the app scope (`x_aa_auto_assigner` — set on app
+All tables live in the app scope (`x_1578378_aa` — set on app
 creation). Names below omit the scope prefix for readability.
 
 ## Tables

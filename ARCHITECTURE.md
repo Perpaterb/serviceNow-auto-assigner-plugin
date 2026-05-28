@@ -9,7 +9,7 @@
 3. **Assignment engine** — a single Scheduled Job (Script) that runs every N
    minutes and processes every `running` assigner **sequentially**.
 4. **Purge job** — a Scheduled Job that clears `activity_log` > 7 days old.
-5. **Security** — `x_aa_auto_assigner.queue_manager` role + ACLs scoped by group
+5. **Security** — `x_1578378_aa.queue_manager` role + ACLs scoped by group
    membership.
 
 ## Engine cycle (per running assigner)
@@ -107,11 +107,11 @@ engine compares "now in instance TZ" against the stored Time fields directly.
 
 ## Security model
 
-- `x_aa_auto_assigner.queue_manager` role: create/edit/delete assigners, shifts,
+- `x_1578378_aa.queue_manager` role: create/edit/delete assigners, shifts,
   roster, config; Start/Stop.
 - ACLs additionally constrain write to assigners whose `assignment_group` is
   one the user is a member of (group-membership check in the ACL script).
-- Group members **without** `x_aa_auto_assigner.queue_manager` get a **read-only
+- Group members **without** `x_1578378_aa.queue_manager` get a **read-only
   stripped summary** widget — status (running/stopped) + roster (Working /
   Not-working with shift names). No other Main / Shift-setup affordances
   (R1.3).
@@ -128,7 +128,7 @@ engine compares "now in instance TZ" against the stored Time fields directly.
 
 ## Build order (suggested)
 
-1. App scope + tables + `x_aa_auto_assigner.queue_manager` role + ACLs.
+1. App scope + tables + `x_1578378_aa.queue_manager` role + ACLs.
 2. Seed logic: Default shift on assigner creation.
 3. Engine script (steps 1–6) with logging — testable headless before UI.
 4. Purge job.

@@ -5,7 +5,7 @@
 | **Scoped app** | A self-contained ServiceNow application with its own scope prefix (`x_...`), tables, UI, logic, and security. The proper term for what is informally called a "plugin". |
 | **Auto-assigner** | A single configured instance of the assignment engine, bound to one assignment group. A group can have multiple auto-assigners running. Shown as a tab in the UI. |
 | **Analyst** | A fulfiller who receives tickets. A member of the assignment group. (Previously called "agent".) |
-| **Queue manager** | The role that can create, configure, start/stop, and manage auto-assigners. Implemented as the scoped role `x_aa_auto_assigner.queue_manager` to avoid colliding with any pre-existing role of the same informal name. |
+| **Queue manager** | The role that can create, configure, start/stop, and manage auto-assigners. Implemented as the scoped role `x_1578378_aa.queue_manager` to avoid colliding with any pre-existing role of the same informal name. |
 | **Assignment group** | Standard ServiceNow `sys_user_group`. Analysts are its members. |
 | **Shift** | A named template of start time, end time, and zero or more breaks. **Scoped to a single auto-assigner** — not shared across assigners. Reusable across analysts on that one assigner. |
 | **Roster (working list)** | The set of analysts currently designated to work today, each with a chosen shift. |

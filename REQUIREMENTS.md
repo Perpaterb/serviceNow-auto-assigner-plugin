@@ -2,16 +2,16 @@
 
 ## 1. Access & multi-tenancy
 
-- **R1.1** The app must define a scoped role `x_aa_auto_assigner.queue_manager` (the
+- **R1.1** The app must define a scoped role `x_1578378_aa.queue_manager` (the
   app's own namespaced role — chosen to avoid clashing with any existing
   `queue_manager` on the target instance, per Q12).
-- **R1.2** A user who holds `x_aa_auto_assigner.queue_manager` AND is a member of an
+- **R1.2** A user who holds `x_1578378_aa.queue_manager` AND is a member of an
   assignment group may create and configure auto-assigners for that group only.
 - **R1.3** Any member of an assignment group can see a **stripped read-only
   summary** of the auto-assigner(s) configured for that group — status
   (running/stopped) and the current roster (Working / Not-working lists with
   shift names). No edit affordances. The full Main / Shift-setup pages
-  remain restricted to `x_aa_auto_assigner.queue_manager`.
+  remain restricted to `x_1578378_aa.queue_manager`.
 - **R1.4** Multiple auto-assigners may run concurrently on the same assignment
   group.
 
