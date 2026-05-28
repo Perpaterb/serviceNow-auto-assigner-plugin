@@ -38,7 +38,7 @@ pull someone off at lunchtime." Auto-Assigner fills exactly that gap.
 | Data             | Custom tables (assigner config, shift templates, roster, activity)|
 | Manager UI       | Service Portal widgets (tabbed shell, Main page, Shift setup)      |
 | Assignment engine| Single Scheduled Job (every N min) — processes assigners sequentially |
-| Security         | Scoped `x_<scope>_queue_manager` role + group-membership ACLs       |
+| Security         | Scoped `x_aa_auto_assigner.queue_manager` role + group-membership ACLs       |
 
 ## Repo layout
 
