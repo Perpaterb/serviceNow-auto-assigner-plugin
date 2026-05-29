@@ -3,24 +3,22 @@ api.controller = function($scope) {
     c.activeTab = 0;
 
     c.toggleRunning = function(assigner) {
-        c.server.update({
-            action: 'toggleRunning',
-            assignerSysId: assigner.sys_id
-        }).then(function() {
+        c.data.action = 'toggleRunning';
+        c.data.assignerSysId = assigner.sys_id;
+        c.server.update().then(function() {
             assigner.running = !assigner.running;
         });
     };
 
     c.toggleWorking = function(assigner, entry) {
         var willWork = !entry.working;
-        c.server.update({
-            action: 'setWorking',
-            rosterSysId: entry.sys_id,
-            working: willWork
-        }).then(function(response) {
+        c.data.action = 'setWorking';
+        c.data.rosterSysId = entry.sys_id;
+        c.data.working = willWork;
+        c.server.update().then(function(response) {
             entry.working = willWork;
-            // Re-sync this entry from the fresh server payload (server may have
-            // auto-applied last_shift / default shift when moving into Working).
+            // Re-sync the entry from the fresh server payload (server may
+            // have auto-applied last_shift / default shift on move-to-working).
             var fresh = findRosterEntry(response.data, assigner.sys_id, entry.sys_id);
             if (fresh) {
                 entry.shift = fresh.shift;
@@ -30,11 +28,10 @@ api.controller = function($scope) {
     };
 
     c.setShift = function(entry) {
-        c.server.update({
-            action: 'setShift',
-            rosterSysId: entry.sys_id,
-            shiftSysId: entry.shift_sys_id
-        });
+        c.data.action = 'setShift';
+        c.data.rosterSysId = entry.sys_id;
+        c.data.shiftSysId = entry.shift_sys_id;
+        c.server.update();
     };
 
     function findRosterEntry(payload, assignerSysId, rosterSysId) {
