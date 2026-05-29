@@ -3,7 +3,9 @@
         <category>custom</category>
         <client_script>api.controller = function($scope, $interval) {
     var c = this;
-    c.activeTab = 0;
+    // Open on the first assigner (index 0). Only land on the "New assigner"
+    // tab (index -1) when there are no assigners yet.
+    c.activeTab = (c.data &amp;&amp; c.data.assigners &amp;&amp; c.data.assigners.length) ? 0 : -1;
 
     // Per-assigner expanded/collapsed state for the collapsible sections.
     // Kept on the controller (not c.data) so it survives the c.data
@@ -63,10 +65,12 @@
     c.deleteAssigner = function(a) {
         c.data.action = 'deleteAssigner';
         c.data.assignerSysId = a.sys_id;
-        c.server.update().then(function() {
+        c.server.update().then(function(response) {
             c.confirmDelete[a.sys_id] = false;
             c.viewState[a.sys_id] = 'dashboard';
-            c.activeTab = 0;
+            var remaining = (response &amp;&amp; response.data &amp;&amp; response.data.assigners)
+                ? response.data.assigners.length : 0;
+            c.activeTab = remaining ? 0 : -1;
         });
     };
 
@@ -1634,7 +1638,7 @@
   &lt;/div&gt;
 
   &lt;uib-tabset active="c.activeTab"&gt;
-    &lt;uib-tab ng-repeat="a in data.assigners track by a.sys_id" heading="{{a.name}}"&gt;
+    &lt;uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index" heading="{{a.name}}"&gt;
       &lt;div class="aa-assigner"&gt;
 
         &lt;div class="aa-header"&gt;
@@ -2081,7 +2085,7 @@
       &lt;/div&gt;
     &lt;/uib-tab&gt;
 
-    &lt;uib-tab&gt;
+    &lt;uib-tab index="-1"&gt;
       &lt;uib-tab-heading&gt;&lt;i class="fa fa-plus"&gt;&lt;/i&gt; New assigner&lt;/uib-tab-heading&gt;
       &lt;div class="aa-create-form"&gt;
         &lt;h3&gt;Create a new auto-assigner&lt;/h3&gt;

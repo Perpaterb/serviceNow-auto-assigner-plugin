@@ -1,6 +1,8 @@
 api.controller = function($scope, $interval) {
     var c = this;
-    c.activeTab = 0;
+    // Open on the first assigner (index 0). Only land on the "New assigner"
+    // tab (index -1) when there are no assigners yet.
+    c.activeTab = (c.data && c.data.assigners && c.data.assigners.length) ? 0 : -1;
 
     // Per-assigner expanded/collapsed state for the collapsible sections.
     // Kept on the controller (not c.data) so it survives the c.data
@@ -60,10 +62,12 @@ api.controller = function($scope, $interval) {
     c.deleteAssigner = function(a) {
         c.data.action = 'deleteAssigner';
         c.data.assignerSysId = a.sys_id;
-        c.server.update().then(function() {
+        c.server.update().then(function(response) {
             c.confirmDelete[a.sys_id] = false;
             c.viewState[a.sys_id] = 'dashboard';
-            c.activeTab = 0;
+            var remaining = (response && response.data && response.data.assigners)
+                ? response.data.assigners.length : 0;
+            c.activeTab = remaining ? 0 : -1;
         });
     };
 

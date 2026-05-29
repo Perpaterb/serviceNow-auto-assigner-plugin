@@ -8,7 +8,7 @@
   </div>
 
   <uib-tabset active="c.activeTab">
-    <uib-tab ng-repeat="a in data.assigners track by a.sys_id" heading="{{a.name}}">
+    <uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index" heading="{{a.name}}">
       <div class="aa-assigner">
 
         <div class="aa-header">
@@ -455,7 +455,7 @@
       </div>
     </uib-tab>
 
-    <uib-tab>
+    <uib-tab index="-1">
       <uib-tab-heading><i class="fa fa-plus"></i> New assigner</uib-tab-heading>
       <div class="aa-create-form">
         <h3>Create a new auto-assigner</h3>
