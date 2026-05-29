@@ -963,7 +963,7 @@
                 &lt;input type="checkbox"
                        ng-model="a.stop_overnight"
                        ng-change="c.setBool(a, 'stop_overnight')"/&gt;
-                Stop overnight (currently informational — engine always halts at end time)
+                Stop overnight — at end time, also stop the assigner. Needs a manual Start to resume (use this if no-one should pick up tickets between days, e.g. weekends).
               &lt;/label&gt;
             &lt;/div&gt;
           &lt;/div&gt;

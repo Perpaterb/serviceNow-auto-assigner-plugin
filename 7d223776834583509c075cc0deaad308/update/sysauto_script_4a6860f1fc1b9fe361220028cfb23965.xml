@@ -62,12 +62,26 @@
         var endSec   = timeFieldToSeconds(a.run_end_time.getDisplayValue());
         dbg(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
                 + ' stop_overnight=' + a.stop_overnight);
-        // The active window is purely a per-cycle gate — outside it the
-        // cycle does nothing and tries again at the next scheduled tick.
-        // The engine NEVER flips `running` on its own; only a manager
-        // changes that.
+        // The active window is a per-cycle gate. Outside it the cycle does
+        // nothing; by default the assigner stays running and resumes
+        // automatically at the next start_time.
+        //
+        // stop_overnight is an *opt-in* override: when past end_time, also
+        // flip running=false so the assigner stays off until a manager
+        // manually starts it. Use case: leave it set on a Friday, end at
+        // 23:59, and weekend hours don't auto-assign.
         if (startSec !== null &amp;&amp; nowSec &lt; startSec) { dbg(TAG + '   skip: before start'); return; }
-        if (endSec   !== null &amp;&amp; nowSec &gt; endSec)   { dbg(TAG + '   skip: past end');     return; }
+        if (endSec !== null &amp;&amp; nowSec &gt; endSec) {
+            if (a.stop_overnight == true) {
+                a.running  = false;
+                a.last_run = now;
+                a.update();
+                gs.info(TAG + ' ' + a.name + ' auto-stopped (past end_time + stop_overnight)');
+            } else {
+                dbg(TAG + '   skip: past end (will resume at next start)');
+            }
+            return;
+        }
 
         var groupSysId = a.getValue('assignment_group');
         if (!groupSysId) {
