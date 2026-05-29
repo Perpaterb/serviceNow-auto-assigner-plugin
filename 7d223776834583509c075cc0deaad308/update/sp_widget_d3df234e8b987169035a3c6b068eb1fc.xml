@@ -26,6 +26,102 @@
         return !!(c.sectionState[a.sys_id] &amp;&amp; c.sectionState[a.sys_id][key]);
     };
 
+    // Per-assigner view: 'dashboard' (default) or 'settings'. Kept on the
+    // controller so it survives the c.data replacement that server.update()
+    // does. Drafts for the rename field and the add-shift form live here too,
+    // keyed by assigner sys_id, for the same reason.
+    c.viewState    = {};
+    c.nameDrafts   = {};
+    c.draftShifts  = {};
+    c.confirmDelete = {};
+
+    c.isSettingsView = function(a) { return c.viewState[a.sys_id] === 'settings'; };
+
+    c.showSettings = function(a) {
+        c.viewState[a.sys_id]    = 'settings';
+        c.nameDrafts[a.sys_id]   = a.name;
+        c.confirmDelete[a.sys_id] = false;
+        if (!c.draftShifts[a.sys_id]) {
+            c.draftShifts[a.sys_id] = { name: '', start: '09:00', end: '17:00' };
+        }
+    };
+
+    c.showDashboard = function(a) {
+        c.viewState[a.sys_id]     = 'dashboard';
+        c.confirmDelete[a.sys_id] = false;
+    };
+
+    c.renameAssigner = function(a) {
+        var name = (c.nameDrafts[a.sys_id] || '').replace(/^\s+|\s+$/g, '');
+        if (!name || name === a.name) return;
+        c.data.action = 'renameAssigner';
+        c.data.assignerSysId = a.sys_id;
+        c.data.name = name;
+        c.server.update();
+    };
+
+    c.deleteAssigner = function(a) {
+        c.data.action = 'deleteAssigner';
+        c.data.assignerSysId = a.sys_id;
+        c.server.update().then(function() {
+            c.confirmDelete[a.sys_id] = false;
+            c.viewState[a.sys_id] = 'dashboard';
+            c.activeTab = 0;
+        });
+    };
+
+    c.addShift = function(a) {
+        var d = c.draftShifts[a.sys_id];
+        if (!d || !d.name || !isValidHhmm(d.start) || !isValidHhmm(d.end)) return;
+        c.data.action = 'addShift';
+        c.data.assignerSysId = a.sys_id;
+        c.data.name  = d.name;
+        c.data.start = d.start;
+        c.data.end   = d.end;
+        c.server.update().then(function() {
+            c.draftShifts[a.sys_id] = { name: '', start: '09:00', end: '17:00' };
+        });
+    };
+
+    c.saveShift = function(a, s) {
+        if (!s.name || !isValidHhmm(s.start_time) || !isValidHhmm(s.end_time)) return;
+        c.data.action = 'updateShift';
+        c.data.shiftSysId = s.sys_id;
+        c.data.name  = s.name;
+        c.data.start = s.start_time;
+        c.data.end   = s.end_time;
+        c.server.update();
+    };
+
+    c.deleteShift = function(a, s) {
+        c.data.action = 'deleteShift';
+        c.data.shiftSysId = s.sys_id;
+        c.server.update();
+    };
+
+    c.addBreak = function(a, s) {
+        c.data.action = 'addBreak';
+        c.data.shiftSysId = s.sys_id;
+        c.data.start = '12:00';
+        c.data.end   = '13:00';
+        c.server.update();
+    };
+
+    c.saveBreak = function(a, s, b) {
+        if (!isValidHhmm(b.start_time) || !isValidHhmm(b.end_time)) return;
+        c.data.action = 'updateBreak';
+        c.data.breakSysId = b.sys_id;
+        c.data.start = b.start_time;
+        c.data.end   = b.end_time;
+        c.server.update();
+    };
+
+    c.deleteBreak = function(a, s, b) {
+        c.data.action = 'deleteBreak';
+        c.data.breakSysId = b.sys_id;
+        c.server.update();
+    };
+
     c.draftAssigner = { name: '', groupSysId: '' };
 
     c.createAssigner = function() {
@@ -509,6 +605,87 @@
 }
 .aa-activity-arrow { color: #999; }
 
+/* Shifts &amp; settings page */
+.aa-settings-page { padding: 8px 4px 16px; }
+.aa-name-input { width: 280px; max-width: 100%; }
+
+.aa-shift-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+.aa-shift-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.aa-shift-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+    gap: 2px;
+}
+.aa-shift-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+.aa-default-pill { align-self: center; }
+
+.aa-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #b35900;
+}
+
+.aa-breaks {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 3px solid #e3f2fd;
+}
+.aa-break-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.aa-break-label { color: #555; font-weight: 600; min-width: 44px; }
+.aa-break-row .aa-time-input { width: 90px; margin-top: 0; }
+.aa-add-break { margin-top: 4px; }
+
+.aa-add-shift {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px dashed #ddd;
+}
+.aa-add-shift label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+    gap: 2px;
+}
+
+.aa-shift-locked { color: #b35900; font-weight: 600; }
+.aa-shift-locked .fa { margin-right: 6px; }
+
+.aa-danger-zone h4 { color: #c62828; }
+.aa-gear .fa { margin-right: 4px; }
+
 .aa-create-form { padding: 20px 4px; max-width: 640px; }
 .aa-create-form h3 { margin-top: 0; }
 .aa-create-row {
@@ -710,6 +887,45 @@
             case 'createAssigner':
                 createAssigner(input.name, input.groupSysId);
                 break;
+            case 'renameAssigner':
+                editAssigner(input.assignerSysId, function(a) {
+                    var nm = ('' + (input.name || '')).trim();
+                    if (nm) a.name = nm.substring(0, 100);
+                });
+                break;
+            case 'deleteAssigner':
+                deleteAssigner(input.assignerSysId);
+                break;
+            case 'addShift':
+                addShift(input.assignerSysId, input.name, input.start, input.end);
+                break;
+            case 'updateShift':
+                editShift(input.shiftSysId, function(s) {
+                    var nm = ('' + (input.name || '')).trim();
+                    var st = toHhmmss(input.start);
+                    var en = toHhmmss(input.end);
+                    if (nm) s.name = nm.substring(0, 100);
+                    if (st) s.start_time = st;
+                    if (en) s.end_time = en;
+                });
+                break;
+            case 'deleteShift':
+                deleteShift(input.shiftSysId);
+                break;
+            case 'addBreak':
+                addBreak(input.shiftSysId, input.start, input.end);
+                break;
+            case 'updateBreak':
+                editBreak(input.breakSysId, function(b) {
+                    var st = toHhmmss(input.start);
+                    var en = toHhmmss(input.end);
+                    if (st) b.start_time = st;
+                    if (en) b.end_time = en;
+                });
+                break;
+            case 'deleteBreak':
+                deleteBreak(input.breakSysId);
+                break;
         }
     }
 
@@ -727,6 +943,153 @@
         a.stop_overnight = false;
         a.insert();
         // Seed BR auto-creates the Default shift on insert.
+    }
+
+    // Cascade-delete an assigner and every record that references it. The
+    // child tables store the assigner (and shift) as plain sys_id strings, so
+    // nothing is cleaned up automatically — we sweep each one here.
+    function deleteAssigner(assignerSysId) {
+        if (!canEditAssignerById(assignerSysId)) return;
+
+        // shift_break rows hang off shifts, not the assigner — collect the
+        // assigner's shift ids first, then purge their breaks.
+        var shiftIds = [];
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.addQuery('assigner', assignerSysId);
+        s.query();
+        while (s.next()) shiftIds.push(s.getUniqueValue());
+        if (shiftIds.length) {
+            var br = new GlideRecord(SCOPE + 'shift_break');
+            br.addQuery('shift', 'IN', shiftIds.join(','));
+            br.deleteMultiple();
+        }
+
+        deleteChildren(SCOPE + 'shift', assignerSysId);
+        deleteChildren(SCOPE + 'roster_entry', assignerSysId);
+        deleteChildren(SCOPE + 'ticket_type_selection', assignerSysId);
+        deleteChildren(SCOPE + 'reassign_type_selection', assignerSysId);
+        deleteChildren(SCOPE + 'reassign_state_selection', assignerSysId);
+        deleteChildren(SCOPE + 'activity_log', assignerSysId);
+
+        var a = new GlideRecord(SCOPE + 'assigner');
+        if (a.get(assignerSysId)) a.deleteRecord();
+    }
+
+    function deleteChildren(table, assignerSysId) {
+        var g = new GlideRecord(table);
+        g.addQuery('assigner', assignerSysId);
+        g.deleteMultiple();
+    }
+
+    // R3.4 — shifts may only be created/edited/deleted while the assigner is
+    // stopped. Combines the manage-permission check with that gate.
+    function canEditShifts(assignerSysId) {
+        if (!canEditAssignerById(assignerSysId)) return false;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        return a.get(assignerSysId) &amp;&amp; a.running != true;
+    }
+
+    function addShift(assignerSysId, name, start, end) {
+        if (!canEditShifts(assignerSysId)) return;
+        var nm = ('' + (name || '')).trim();
+        var st = toHhmmss(start);
+        var en = toHhmmss(end);
+        if (!nm || !st || !en) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.initialize();
+        s.assigner   = assignerSysId;
+        s.name       = nm.substring(0, 100);
+        s.start_time = st;
+        s.end_time   = en;
+        s.is_default = false;
+        s.insert();
+    }
+
+    function editShift(shiftSysId, mutator) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        if (!canEditShifts(s.getValue('assigner'))) return;
+        mutator(s);
+        s.update();
+    }
+
+    function deleteShift(shiftSysId) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        var assignerSysId = s.getValue('assigner');
+        if (!canEditShifts(assignerSysId)) return;
+        // The default shift is the fallback for newly-working analysts; keep it.
+        if (s.is_default == true) return;
+
+        var br = new GlideRecord(SCOPE + 'shift_break');
+        br.addQuery('shift', shiftSysId);
+        br.deleteMultiple();
+
+        // R3.4 — analysts on a deleted shift fall back to the Default shift
+        // rather than being left with no shift.
+        var defaultShiftSysId = findDefaultShift(assignerSysId);
+        reassignRosterShift('shift', shiftSysId, defaultShiftSysId);
+        reassignRosterShift('last_shift', shiftSysId, defaultShiftSysId);
+
+        s.deleteRecord();
+    }
+
+    function reassignRosterShift(field, fromShiftSysId, toShiftSysId) {
+        var r = new GlideRecord(SCOPE + 'roster_entry');
+        r.addQuery(field, fromShiftSysId);
+        r.query();
+        while (r.next()) {
+            r.setValue(field, toShiftSysId || '');
+            r.update();
+        }
+    }
+
+    function addBreak(shiftSysId, start, end) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        if (!canEditShifts(s.getValue('assigner'))) return;
+        var st = toHhmmss(start);
+        var en = toHhmmss(end);
+        if (!st || !en) return;
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        b.initialize();
+        b.shift      = shiftSysId;
+        b.start_time = st;
+        b.end_time   = en;
+        b.insert();
+    }
+
+    function editBreak(breakSysId, mutator) {
+        var b = getEditableBreak(breakSysId);
+        if (!b) return;
+        mutator(b);
+        b.update();
+    }
+
+    function deleteBreak(breakSysId) {
+        var b = getEditableBreak(breakSysId);
+        if (b) b.deleteRecord();
+    }
+
+    // Fetch a break row only if the caller may edit its parent assigner.
+    function getEditableBreak(breakSysId) {
+        if (!breakSysId) return null;
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        if (!b.get(breakSysId)) return null;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(b.getValue('shift'))) return null;
+        if (!canEditShifts(s.getValue('assigner'))) return null;
+        return b;
+    }
+
+    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if junk.
+    function toHhmmss(value) {
+        var v = ('' + (value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+        if (!v) return null;
+        return pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
     }
 
     function editAssigner(sysId, mutator) {
@@ -928,9 +1291,32 @@
         s.orderBy('name');
         s.query();
         while (s.next()) {
-            shifts.push({ sys_id: s.getUniqueValue(), name: s.name + '' });
+            shifts.push({
+                sys_id:     s.getUniqueValue(),
+                name:       s.name + '',
+                start_time: hhmmFromTime(s.start_time.getDisplayValue()),
+                end_time:   hhmmFromTime(s.end_time.getDisplayValue()),
+                is_default: s.is_default == true,
+                breaks:     getBreaks(s.getUniqueValue())
+            });
         }
         return shifts;
+    }
+
+    function getBreaks(shiftSysId) {
+        var breaks = [];
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        b.addQuery('shift', shiftSysId);
+        b.orderBy('start_time');
+        b.query();
+        while (b.next()) {
+            breaks.push({
+                sys_id:     b.getUniqueValue(),
+                start_time: hhmmFromTime(b.start_time.getDisplayValue()),
+                end_time:   hhmmFromTime(b.end_time.getDisplayValue())
+            });
+        }
+        return breaks;
     }
 
     function getRoster(assignerSysId) {
@@ -1281,9 +1667,21 @@
                     ng-disabled="!a.canManage"&gt;
               {{a.running ? 'Stop' : 'Start'}}
             &lt;/button&gt;
+            &lt;button class="btn btn-sm btn-default aa-gear"
+                    ng-if="a.canManage &amp;&amp; !c.isSettingsView(a)"
+                    ng-click="c.showSettings(a)"
+                    title="Shifts &amp;amp; settings"&gt;
+              &lt;i class="fa fa-cog"&gt;&lt;/i&gt; Shifts &amp;amp; settings
+            &lt;/button&gt;
+            &lt;button class="btn btn-sm btn-default"
+                    ng-if="a.canManage &amp;&amp; c.isSettingsView(a)"
+                    ng-click="c.showDashboard(a)"&gt;
+              &lt;i class="fa fa-arrow-left"&gt;&lt;/i&gt; Back to dashboard
+            &lt;/button&gt;
           &lt;/div&gt;
         &lt;/div&gt;
 
+        &lt;div class="aa-dashboard" ng-if="!c.isSettingsView(a)"&gt;
         &lt;div class="aa-rosters"&gt;
           &lt;div class="aa-list"&gt;
             &lt;h4&gt;Working ({{(a.roster | filter:{working:true}).length}})&lt;/h4&gt;
@@ -1565,6 +1963,120 @@
           &lt;/div&gt;
 
         &lt;/div&gt;
+        &lt;/div&gt;&lt;!-- /.aa-dashboard --&gt;
+
+        &lt;div class="aa-settings-page" ng-if="c.isSettingsView(a) &amp;&amp; a.canManage"&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Assigner name&lt;/h4&gt;
+            &lt;div class="aa-run-row"&gt;
+              &lt;input type="text" class="form-control aa-name-input"
+                     maxlength="100" ng-model="c.nameDrafts[a.sys_id]"/&gt;
+              &lt;button class="btn btn-sm btn-primary"
+                      ng-click="c.renameAssigner(a)"
+                      ng-disabled="!c.nameDrafts[a.sys_id] || c.nameDrafts[a.sys_id] === a.name"&gt;
+                Save name
+              &lt;/button&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Shifts&lt;/h4&gt;
+            &lt;p class="aa-help"&gt;Shifts define the hours an analyst is on duty. An analyst only picks up tickets when they're marked Working and the current time is inside their shift (and not during a break).&lt;/p&gt;
+            &lt;p class="aa-help aa-shift-locked" ng-if="a.running"&gt;
+              &lt;i class="fa fa-lock"&gt;&lt;/i&gt; Stop the assigner to add, edit, or delete shifts.
+            &lt;/p&gt;
+
+            &lt;div class="aa-shift-card" ng-repeat="s in a.shifts track by s.sys_id"&gt;
+              &lt;div class="aa-shift-row"&gt;
+                &lt;label&gt;
+                  Shift name
+                  &lt;input type="text" class="form-control" maxlength="100"
+                         ng-model="s.name" ng-readonly="a.running"/&gt;
+                &lt;/label&gt;
+                &lt;label&gt;
+                  Start
+                  &lt;input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"/&gt;
+                &lt;/label&gt;
+                &lt;label&gt;
+                  End
+                  &lt;input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"/&gt;
+                &lt;/label&gt;
+                &lt;span class="aa-shift-pill aa-default-pill" ng-if="s.is_default"&gt;Default&lt;/span&gt;
+                &lt;span class="aa-shift-actions" ng-if="!a.running"&gt;
+                  &lt;button class="btn btn-xs btn-primary" ng-click="c.saveShift(a, s)"&gt;Save&lt;/button&gt;
+                  &lt;button class="btn btn-xs btn-default"
+                          ng-if="!s.is_default &amp;&amp; !s._confirmDelete"
+                          ng-click="s._confirmDelete = true"&gt;Delete&lt;/button&gt;
+                  &lt;span ng-if="s._confirmDelete" class="aa-confirm"&gt;
+                    Delete shift?
+                    &lt;button class="btn btn-xs btn-danger" ng-click="c.deleteShift(a, s)"&gt;Yes&lt;/button&gt;
+                    &lt;button class="btn btn-xs btn-default" ng-click="s._confirmDelete = false"&gt;No&lt;/button&gt;
+                  &lt;/span&gt;
+                &lt;/span&gt;
+              &lt;/div&gt;
+
+              &lt;div class="aa-breaks"&gt;
+                &lt;div class="aa-break-row" ng-repeat="b in s.breaks track by b.sys_id"&gt;
+                  &lt;span class="aa-break-label"&gt;Break&lt;/span&gt;
+                  &lt;input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"/&gt;
+                  &lt;span&gt;to&lt;/span&gt;
+                  &lt;input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"/&gt;
+                  &lt;button class="btn btn-xs btn-primary" ng-if="!a.running" ng-click="c.saveBreak(a, s, b)"&gt;Save&lt;/button&gt;
+                  &lt;button class="btn btn-xs btn-default" ng-if="!a.running" ng-click="c.deleteBreak(a, s, b)"&gt;Remove&lt;/button&gt;
+                &lt;/div&gt;
+                &lt;button class="btn btn-xs btn-default aa-add-break"
+                        ng-if="!a.running"
+                        ng-click="c.addBreak(a, s)"&gt;
+                  &lt;i class="fa fa-plus"&gt;&lt;/i&gt; Add break
+                &lt;/button&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+
+            &lt;div class="aa-add-shift" ng-if="!a.running"&gt;
+              &lt;label&gt;
+                Shift name
+                &lt;input type="text" class="form-control" maxlength="100"
+                       placeholder="e.g. Late shift" ng-model="c.draftShifts[a.sys_id].name"/&gt;
+              &lt;/label&gt;
+              &lt;label&gt;
+                Start
+                &lt;input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"/&gt;
+              &lt;/label&gt;
+              &lt;label&gt;
+                End
+                &lt;input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"/&gt;
+              &lt;/label&gt;
+              &lt;button class="btn btn-sm btn-default"
+                      ng-click="c.addShift(a)"
+                      ng-disabled="!c.draftShifts[a.sys_id].name"&gt;
+                &lt;i class="fa fa-plus"&gt;&lt;/i&gt; Add shift
+              &lt;/button&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section aa-danger-zone"&gt;
+            &lt;h4&gt;Delete this assigner&lt;/h4&gt;
+            &lt;p class="aa-help"&gt;Permanently removes this assigner along with its shifts, roster, ticket-type and reassign settings, and activity log. This cannot be undone.&lt;/p&gt;
+            &lt;button class="btn btn-danger"
+                    ng-if="!c.confirmDelete[a.sys_id]"
+                    ng-click="c.confirmDelete[a.sys_id] = true"&gt;
+              Delete assigner
+            &lt;/button&gt;
+            &lt;div class="aa-confirm" ng-if="c.confirmDelete[a.sys_id]"&gt;
+              &lt;span&gt;Delete &lt;strong&gt;{{a.name}}&lt;/strong&gt; and everything tied to it?&lt;/span&gt;
+              &lt;button class="btn btn-danger" ng-click="c.deleteAssigner(a)"&gt;Yes, delete it&lt;/button&gt;
+              &lt;button class="btn btn-default" ng-click="c.confirmDelete[a.sys_id] = false"&gt;Cancel&lt;/button&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+        &lt;/div&gt;&lt;!-- /.aa-settings-page --&gt;
 
       &lt;/div&gt;
     &lt;/uib-tab&gt;

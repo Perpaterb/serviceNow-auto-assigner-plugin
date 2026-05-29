@@ -23,6 +23,102 @@ api.controller = function($scope, $interval) {
         return !!(c.sectionState[a.sys_id] && c.sectionState[a.sys_id][key]);
     };
 
+    // Per-assigner view: 'dashboard' (default) or 'settings'. Kept on the
+    // controller so it survives the c.data replacement that server.update()
+    // does. Drafts for the rename field and the add-shift form live here too,
+    // keyed by assigner sys_id, for the same reason.
+    c.viewState    = {};
+    c.nameDrafts   = {};
+    c.draftShifts  = {};
+    c.confirmDelete = {};
+
+    c.isSettingsView = function(a) { return c.viewState[a.sys_id] === 'settings'; };
+
+    c.showSettings = function(a) {
+        c.viewState[a.sys_id]    = 'settings';
+        c.nameDrafts[a.sys_id]   = a.name;
+        c.confirmDelete[a.sys_id] = false;
+        if (!c.draftShifts[a.sys_id]) {
+            c.draftShifts[a.sys_id] = { name: '', start: '09:00', end: '17:00' };
+        }
+    };
+
+    c.showDashboard = function(a) {
+        c.viewState[a.sys_id]     = 'dashboard';
+        c.confirmDelete[a.sys_id] = false;
+    };
+
+    c.renameAssigner = function(a) {
+        var name = (c.nameDrafts[a.sys_id] || '').replace(/^\s+|\s+$/g, '');
+        if (!name || name === a.name) return;
+        c.data.action = 'renameAssigner';
+        c.data.assignerSysId = a.sys_id;
+        c.data.name = name;
+        c.server.update();
+    };
+
+    c.deleteAssigner = function(a) {
+        c.data.action = 'deleteAssigner';
+        c.data.assignerSysId = a.sys_id;
+        c.server.update().then(function() {
+            c.confirmDelete[a.sys_id] = false;
+            c.viewState[a.sys_id] = 'dashboard';
+            c.activeTab = 0;
+        });
+    };
+
+    c.addShift = function(a) {
+        var d = c.draftShifts[a.sys_id];
+        if (!d || !d.name || !isValidHhmm(d.start) || !isValidHhmm(d.end)) return;
+        c.data.action = 'addShift';
+        c.data.assignerSysId = a.sys_id;
+        c.data.name  = d.name;
+        c.data.start = d.start;
+        c.data.end   = d.end;
+        c.server.update().then(function() {
+            c.draftShifts[a.sys_id] = { name: '', start: '09:00', end: '17:00' };
+        });
+    };
+
+    c.saveShift = function(a, s) {
+        if (!s.name || !isValidHhmm(s.start_time) || !isValidHhmm(s.end_time)) return;
+        c.data.action = 'updateShift';
+        c.data.shiftSysId = s.sys_id;
+        c.data.name  = s.name;
+        c.data.start = s.start_time;
+        c.data.end   = s.end_time;
+        c.server.update();
+    };
+
+    c.deleteShift = function(a, s) {
+        c.data.action = 'deleteShift';
+        c.data.shiftSysId = s.sys_id;
+        c.server.update();
+    };
+
+    c.addBreak = function(a, s) {
+        c.data.action = 'addBreak';
+        c.data.shiftSysId = s.sys_id;
+        c.data.start = '12:00';
+        c.data.end   = '13:00';
+        c.server.update();
+    };
+
+    c.saveBreak = function(a, s, b) {
+        if (!isValidHhmm(b.start_time) || !isValidHhmm(b.end_time)) return;
+        c.data.action = 'updateBreak';
+        c.data.breakSysId = b.sys_id;
+        c.data.start = b.start_time;
+        c.data.end   = b.end_time;
+        c.server.update();
+    };
+
+    c.deleteBreak = function(a, s, b) {
+        c.data.action = 'deleteBreak';
+        c.data.breakSysId = b.sys_id;
+        c.server.update();
+    };
+
     c.draftAssigner = { name: '', groupSysId: '' };
 
     c.createAssigner = function() {

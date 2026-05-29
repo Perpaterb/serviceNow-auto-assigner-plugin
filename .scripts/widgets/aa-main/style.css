@@ -237,6 +237,87 @@
 }
 .aa-activity-arrow { color: #999; }
 
+/* Shifts & settings page */
+.aa-settings-page { padding: 8px 4px 16px; }
+.aa-name-input { width: 280px; max-width: 100%; }
+
+.aa-shift-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+.aa-shift-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.aa-shift-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+    gap: 2px;
+}
+.aa-shift-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+.aa-default-pill { align-self: center; }
+
+.aa-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #b35900;
+}
+
+.aa-breaks {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 3px solid #e3f2fd;
+}
+.aa-break-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.aa-break-label { color: #555; font-weight: 600; min-width: 44px; }
+.aa-break-row .aa-time-input { width: 90px; margin-top: 0; }
+.aa-add-break { margin-top: 4px; }
+
+.aa-add-shift {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px dashed #ddd;
+}
+.aa-add-shift label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+    gap: 2px;
+}
+
+.aa-shift-locked { color: #b35900; font-weight: 600; }
+.aa-shift-locked .fa { margin-right: 6px; }
+
+.aa-danger-zone h4 { color: #c62828; }
+.aa-gear .fa { margin-right: 4px; }
+
 .aa-create-form { padding: 20px 4px; max-width: 640px; }
 .aa-create-form h3 { margin-top: 0; }
 .aa-create-row {

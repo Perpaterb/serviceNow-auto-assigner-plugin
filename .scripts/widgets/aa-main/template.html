@@ -41,9 +41,21 @@
                     ng-disabled="!a.canManage">
               {{a.running ? 'Stop' : 'Start'}}
             </button>
+            <button class="btn btn-sm btn-default aa-gear"
+                    ng-if="a.canManage && !c.isSettingsView(a)"
+                    ng-click="c.showSettings(a)"
+                    title="Shifts &amp; settings">
+              <i class="fa fa-cog"></i> Shifts &amp; settings
+            </button>
+            <button class="btn btn-sm btn-default"
+                    ng-if="a.canManage && c.isSettingsView(a)"
+                    ng-click="c.showDashboard(a)">
+              <i class="fa fa-arrow-left"></i> Back to dashboard
+            </button>
           </div>
         </div>
 
+        <div class="aa-dashboard" ng-if="!c.isSettingsView(a)">
         <div class="aa-rosters">
           <div class="aa-list">
             <h4>Working ({{(a.roster | filter:{working:true}).length}})</h4>
@@ -325,6 +337,120 @@
           </div>
 
         </div>
+        </div><!-- /.aa-dashboard -->
+
+        <div class="aa-settings-page" ng-if="c.isSettingsView(a) && a.canManage">
+
+          <div class="aa-settings-section">
+            <h4>Assigner name</h4>
+            <div class="aa-run-row">
+              <input type="text" class="form-control aa-name-input"
+                     maxlength="100" ng-model="c.nameDrafts[a.sys_id]"/>
+              <button class="btn btn-sm btn-primary"
+                      ng-click="c.renameAssigner(a)"
+                      ng-disabled="!c.nameDrafts[a.sys_id] || c.nameDrafts[a.sys_id] === a.name">
+                Save name
+              </button>
+            </div>
+          </div>
+
+          <div class="aa-settings-section">
+            <h4>Shifts</h4>
+            <p class="aa-help">Shifts define the hours an analyst is on duty. An analyst only picks up tickets when they're marked Working and the current time is inside their shift (and not during a break).</p>
+            <p class="aa-help aa-shift-locked" ng-if="a.running">
+              <i class="fa fa-lock"></i> Stop the assigner to add, edit, or delete shifts.
+            </p>
+
+            <div class="aa-shift-card" ng-repeat="s in a.shifts track by s.sys_id">
+              <div class="aa-shift-row">
+                <label>
+                  Shift name
+                  <input type="text" class="form-control" maxlength="100"
+                         ng-model="s.name" ng-readonly="a.running"/>
+                </label>
+                <label>
+                  Start
+                  <input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"/>
+                </label>
+                <label>
+                  End
+                  <input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"/>
+                </label>
+                <span class="aa-shift-pill aa-default-pill" ng-if="s.is_default">Default</span>
+                <span class="aa-shift-actions" ng-if="!a.running">
+                  <button class="btn btn-xs btn-primary" ng-click="c.saveShift(a, s)">Save</button>
+                  <button class="btn btn-xs btn-default"
+                          ng-if="!s.is_default && !s._confirmDelete"
+                          ng-click="s._confirmDelete = true">Delete</button>
+                  <span ng-if="s._confirmDelete" class="aa-confirm">
+                    Delete shift?
+                    <button class="btn btn-xs btn-danger" ng-click="c.deleteShift(a, s)">Yes</button>
+                    <button class="btn btn-xs btn-default" ng-click="s._confirmDelete = false">No</button>
+                  </span>
+                </span>
+              </div>
+
+              <div class="aa-breaks">
+                <div class="aa-break-row" ng-repeat="b in s.breaks track by b.sys_id">
+                  <span class="aa-break-label">Break</span>
+                  <input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"/>
+                  <span>to</span>
+                  <input type="text" class="form-control aa-time-input"
+                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"/>
+                  <button class="btn btn-xs btn-primary" ng-if="!a.running" ng-click="c.saveBreak(a, s, b)">Save</button>
+                  <button class="btn btn-xs btn-default" ng-if="!a.running" ng-click="c.deleteBreak(a, s, b)">Remove</button>
+                </div>
+                <button class="btn btn-xs btn-default aa-add-break"
+                        ng-if="!a.running"
+                        ng-click="c.addBreak(a, s)">
+                  <i class="fa fa-plus"></i> Add break
+                </button>
+              </div>
+            </div>
+
+            <div class="aa-add-shift" ng-if="!a.running">
+              <label>
+                Shift name
+                <input type="text" class="form-control" maxlength="100"
+                       placeholder="e.g. Late shift" ng-model="c.draftShifts[a.sys_id].name"/>
+              </label>
+              <label>
+                Start
+                <input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"/>
+              </label>
+              <label>
+                End
+                <input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"/>
+              </label>
+              <button class="btn btn-sm btn-default"
+                      ng-click="c.addShift(a)"
+                      ng-disabled="!c.draftShifts[a.sys_id].name">
+                <i class="fa fa-plus"></i> Add shift
+              </button>
+            </div>
+          </div>
+
+          <div class="aa-settings-section aa-danger-zone">
+            <h4>Delete this assigner</h4>
+            <p class="aa-help">Permanently removes this assigner along with its shifts, roster, ticket-type and reassign settings, and activity log. This cannot be undone.</p>
+            <button class="btn btn-danger"
+                    ng-if="!c.confirmDelete[a.sys_id]"
+                    ng-click="c.confirmDelete[a.sys_id] = true">
+              Delete assigner
+            </button>
+            <div class="aa-confirm" ng-if="c.confirmDelete[a.sys_id]">
+              <span>Delete <strong>{{a.name}}</strong> and everything tied to it?</span>
+              <button class="btn btn-danger" ng-click="c.deleteAssigner(a)">Yes, delete it</button>
+              <button class="btn btn-default" ng-click="c.confirmDelete[a.sys_id] = false">Cancel</button>
+            </div>
+          </div>
+
+        </div><!-- /.aa-settings-page -->
 
       </div>
     </uib-tab>

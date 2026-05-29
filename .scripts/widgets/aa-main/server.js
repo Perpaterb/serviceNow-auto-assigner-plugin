@@ -169,6 +169,45 @@
             case 'createAssigner':
                 createAssigner(input.name, input.groupSysId);
                 break;
+            case 'renameAssigner':
+                editAssigner(input.assignerSysId, function(a) {
+                    var nm = ('' + (input.name || '')).trim();
+                    if (nm) a.name = nm.substring(0, 100);
+                });
+                break;
+            case 'deleteAssigner':
+                deleteAssigner(input.assignerSysId);
+                break;
+            case 'addShift':
+                addShift(input.assignerSysId, input.name, input.start, input.end);
+                break;
+            case 'updateShift':
+                editShift(input.shiftSysId, function(s) {
+                    var nm = ('' + (input.name || '')).trim();
+                    var st = toHhmmss(input.start);
+                    var en = toHhmmss(input.end);
+                    if (nm) s.name = nm.substring(0, 100);
+                    if (st) s.start_time = st;
+                    if (en) s.end_time = en;
+                });
+                break;
+            case 'deleteShift':
+                deleteShift(input.shiftSysId);
+                break;
+            case 'addBreak':
+                addBreak(input.shiftSysId, input.start, input.end);
+                break;
+            case 'updateBreak':
+                editBreak(input.breakSysId, function(b) {
+                    var st = toHhmmss(input.start);
+                    var en = toHhmmss(input.end);
+                    if (st) b.start_time = st;
+                    if (en) b.end_time = en;
+                });
+                break;
+            case 'deleteBreak':
+                deleteBreak(input.breakSysId);
+                break;
         }
     }
 
@@ -186,6 +225,153 @@
         a.stop_overnight = false;
         a.insert();
         // Seed BR auto-creates the Default shift on insert.
+    }
+
+    // Cascade-delete an assigner and every record that references it. The
+    // child tables store the assigner (and shift) as plain sys_id strings, so
+    // nothing is cleaned up automatically — we sweep each one here.
+    function deleteAssigner(assignerSysId) {
+        if (!canEditAssignerById(assignerSysId)) return;
+
+        // shift_break rows hang off shifts, not the assigner — collect the
+        // assigner's shift ids first, then purge their breaks.
+        var shiftIds = [];
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.addQuery('assigner', assignerSysId);
+        s.query();
+        while (s.next()) shiftIds.push(s.getUniqueValue());
+        if (shiftIds.length) {
+            var br = new GlideRecord(SCOPE + 'shift_break');
+            br.addQuery('shift', 'IN', shiftIds.join(','));
+            br.deleteMultiple();
+        }
+
+        deleteChildren(SCOPE + 'shift', assignerSysId);
+        deleteChildren(SCOPE + 'roster_entry', assignerSysId);
+        deleteChildren(SCOPE + 'ticket_type_selection', assignerSysId);
+        deleteChildren(SCOPE + 'reassign_type_selection', assignerSysId);
+        deleteChildren(SCOPE + 'reassign_state_selection', assignerSysId);
+        deleteChildren(SCOPE + 'activity_log', assignerSysId);
+
+        var a = new GlideRecord(SCOPE + 'assigner');
+        if (a.get(assignerSysId)) a.deleteRecord();
+    }
+
+    function deleteChildren(table, assignerSysId) {
+        var g = new GlideRecord(table);
+        g.addQuery('assigner', assignerSysId);
+        g.deleteMultiple();
+    }
+
+    // R3.4 — shifts may only be created/edited/deleted while the assigner is
+    // stopped. Combines the manage-permission check with that gate.
+    function canEditShifts(assignerSysId) {
+        if (!canEditAssignerById(assignerSysId)) return false;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        return a.get(assignerSysId) && a.running != true;
+    }
+
+    function addShift(assignerSysId, name, start, end) {
+        if (!canEditShifts(assignerSysId)) return;
+        var nm = ('' + (name || '')).trim();
+        var st = toHhmmss(start);
+        var en = toHhmmss(end);
+        if (!nm || !st || !en) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.initialize();
+        s.assigner   = assignerSysId;
+        s.name       = nm.substring(0, 100);
+        s.start_time = st;
+        s.end_time   = en;
+        s.is_default = false;
+        s.insert();
+    }
+
+    function editShift(shiftSysId, mutator) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        if (!canEditShifts(s.getValue('assigner'))) return;
+        mutator(s);
+        s.update();
+    }
+
+    function deleteShift(shiftSysId) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        var assignerSysId = s.getValue('assigner');
+        if (!canEditShifts(assignerSysId)) return;
+        // The default shift is the fallback for newly-working analysts; keep it.
+        if (s.is_default == true) return;
+
+        var br = new GlideRecord(SCOPE + 'shift_break');
+        br.addQuery('shift', shiftSysId);
+        br.deleteMultiple();
+
+        // R3.4 — analysts on a deleted shift fall back to the Default shift
+        // rather than being left with no shift.
+        var defaultShiftSysId = findDefaultShift(assignerSysId);
+        reassignRosterShift('shift', shiftSysId, defaultShiftSysId);
+        reassignRosterShift('last_shift', shiftSysId, defaultShiftSysId);
+
+        s.deleteRecord();
+    }
+
+    function reassignRosterShift(field, fromShiftSysId, toShiftSysId) {
+        var r = new GlideRecord(SCOPE + 'roster_entry');
+        r.addQuery(field, fromShiftSysId);
+        r.query();
+        while (r.next()) {
+            r.setValue(field, toShiftSysId || '');
+            r.update();
+        }
+    }
+
+    function addBreak(shiftSysId, start, end) {
+        if (!shiftSysId) return;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(shiftSysId)) return;
+        if (!canEditShifts(s.getValue('assigner'))) return;
+        var st = toHhmmss(start);
+        var en = toHhmmss(end);
+        if (!st || !en) return;
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        b.initialize();
+        b.shift      = shiftSysId;
+        b.start_time = st;
+        b.end_time   = en;
+        b.insert();
+    }
+
+    function editBreak(breakSysId, mutator) {
+        var b = getEditableBreak(breakSysId);
+        if (!b) return;
+        mutator(b);
+        b.update();
+    }
+
+    function deleteBreak(breakSysId) {
+        var b = getEditableBreak(breakSysId);
+        if (b) b.deleteRecord();
+    }
+
+    // Fetch a break row only if the caller may edit its parent assigner.
+    function getEditableBreak(breakSysId) {
+        if (!breakSysId) return null;
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        if (!b.get(breakSysId)) return null;
+        var s = new GlideRecord(SCOPE + 'shift');
+        if (!s.get(b.getValue('shift'))) return null;
+        if (!canEditShifts(s.getValue('assigner'))) return null;
+        return b;
+    }
+
+    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if junk.
+    function toHhmmss(value) {
+        var v = ('' + (value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+        if (!v) return null;
+        return pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
     }
 
     function editAssigner(sysId, mutator) {
@@ -387,9 +573,32 @@
         s.orderBy('name');
         s.query();
         while (s.next()) {
-            shifts.push({ sys_id: s.getUniqueValue(), name: s.name + '' });
+            shifts.push({
+                sys_id:     s.getUniqueValue(),
+                name:       s.name + '',
+                start_time: hhmmFromTime(s.start_time.getDisplayValue()),
+                end_time:   hhmmFromTime(s.end_time.getDisplayValue()),
+                is_default: s.is_default == true,
+                breaks:     getBreaks(s.getUniqueValue())
+            });
         }
         return shifts;
+    }
+
+    function getBreaks(shiftSysId) {
+        var breaks = [];
+        var b = new GlideRecord(SCOPE + 'shift_break');
+        b.addQuery('shift', shiftSysId);
+        b.orderBy('start_time');
+        b.query();
+        while (b.next()) {
+            breaks.push({
+                sys_id:     b.getUniqueValue(),
+                start_time: hhmmFromTime(b.start_time.getDisplayValue()),
+                end_time:   hhmmFromTime(b.end_time.getDisplayValue())
+            });
+        }
+        return breaks;
     }
 
     function getRoster(assignerSysId) {
