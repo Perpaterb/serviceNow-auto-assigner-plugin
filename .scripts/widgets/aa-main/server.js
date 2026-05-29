@@ -24,6 +24,9 @@
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
             canManage: canEditAssigner(ar),
+            // ms since epoch, for client-side countdown to next 5-min tick.
+            // null if the engine has not run for this assigner yet.
+            lastRunMs: ar.getValue('last_run') ? ar.last_run.dateNumericValue() : null,
             shifts: getShifts(ar.getUniqueValue()),
             roster: getRoster(ar.getUniqueValue())
         });

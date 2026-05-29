@@ -1,9 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script>api.controller = function($scope) {
+        <client_script>api.controller = function($scope, $interval) {
     var c = this;
     c.activeTab = 0;
+
+    // Engine cadence is 5 minutes (sysauto_script.run_period).
+    var CADENCE_MS = 5 * 60 * 1000;
+
+    // Tick the countdowns every second. Pure client-side — no server load.
+    var tickHandle = $interval(updateCountdowns, 1000);
+    $scope.$on('$destroy', function() { $interval.cancel(tickHandle); });
+    updateCountdowns(); // first paint without waiting 1s
+
+    function updateCountdowns() {
+        if (!c.data || !c.data.assigners) return;
+        var now = Date.now();
+        for (var i = 0; i &lt; c.data.assigners.length; i++) {
+            var a = c.data.assigners[i];
+            a.countdown = formatCountdown(a, now);
+        }
+    }
+
+    function formatCountdown(assigner, nowMs) {
+        if (!assigner.lastRunMs) return null;
+        var elapsed = nowMs - assigner.lastRunMs;
+        var remaining = CADENCE_MS - elapsed;
+        if (remaining &lt;= 0) return 'due';
+        var secs = Math.floor(remaining / 1000);
+        var m = Math.floor(secs / 60);
+        var s = secs % 60;
+        return m + ':' + (s &lt; 10 ? '0' : '') + s;
+    }
 
     c.toggleRunning = function(assigner) {
         c.data.action = 'toggleRunning';
@@ -20,8 +48,6 @@
         c.data.working = willWork;
         c.server.update().then(function(response) {
             entry.working = willWork;
-            // Re-sync the entry from the fresh server payload (server may
-            // have auto-applied last_shift / default shift on move-to-working).
             var fresh = findRosterEntry(response.data, assigner.sys_id, entry.sys_id);
             if (fresh) {
                 entry.shift = fresh.shift;
@@ -72,6 +98,15 @@
 .aa-running { color: #2e7d32; font-weight: 600; }
 .aa-stopped { color: #999; }
 .aa-status .fa { margin-right: 4px; }
+
+.aa-countdown {
+    color: #555;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    background: #f3f3f3;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
 
 .aa-rosters {
     display: flex;
@@ -149,6 +184,9 @@
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
             canManage: canEditAssigner(ar),
+            // ms since epoch, for client-side countdown to next 5-min tick.
+            // null if the engine has not run for this assigner yet.
+            lastRunMs: ar.getValue('last_run') ? ar.last_run.dateNumericValue() : null,
             shifts: getShifts(ar.getUniqueValue()),
             roster: getRoster(ar.getUniqueValue())
         });
@@ -285,6 +323,9 @@
             &lt;div class="aa-meta"&gt;Group: {{a.assignment_group}}&lt;/div&gt;
           &lt;/div&gt;
           &lt;div class="aa-status"&gt;
+            &lt;span class="aa-countdown" ng-if="a.countdown" title="Time until next engine cycle"&gt;
+              &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt; {{a.countdown}}
+            &lt;/span&gt;
             &lt;span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}"&gt;
               &lt;i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"&gt;&lt;/i&gt;
               {{a.running ? 'Running' : 'Stopped'}}

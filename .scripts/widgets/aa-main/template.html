@@ -14,6 +14,9 @@
             <div class="aa-meta">Group: {{a.assignment_group}}</div>
           </div>
           <div class="aa-status">
+            <span class="aa-countdown" ng-if="a.countdown" title="Time until next engine cycle">
+              <i class="fa fa-clock-o"></i> {{a.countdown}}
+            </span>
             <span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}">
               <i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"></i>
               {{a.running ? 'Running' : 'Stopped'}}

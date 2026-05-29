@@ -20,6 +20,15 @@
 .aa-stopped { color: #999; }
 .aa-status .fa { margin-right: 4px; }
 
+.aa-countdown {
+    color: #555;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    background: #f3f3f3;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
 .aa-rosters {
     display: flex;
     gap: 16px;
