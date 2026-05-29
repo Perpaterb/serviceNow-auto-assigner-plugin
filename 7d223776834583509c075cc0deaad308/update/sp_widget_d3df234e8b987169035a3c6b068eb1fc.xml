@@ -336,8 +336,14 @@
     margin: 0;
     cursor: pointer;
 }
-.aa-check input[type="checkbox"] { margin: 0; }
+.aa-check input[type="checkbox"] { margin: 0; flex-shrink: 0; }
 .aa-check.aa-master { font-weight: 600; }
+.aa-stop-overnight {
+    align-items: flex-start;
+    margin-top: 10px;
+}
+.aa-stop-overnight input[type="checkbox"] { margin-top: 3px; }
+.aa-stop-overnight span { font-size: 13px; color: #555; }
 
 .aa-checkboxes {
     display: flex;
@@ -959,13 +965,13 @@
                        ng-focus="c.captureRunTime(a, 'end')"
                        ng-change="c.setRunTime(a, 'end')"/&gt;
               &lt;/label&gt;
-              &lt;label class="aa-check"&gt;
-                &lt;input type="checkbox"
-                       ng-model="a.stop_overnight"
-                       ng-change="c.setBool(a, 'stop_overnight')"/&gt;
-                Stop overnight — at end time, also stop the assigner. Needs a manual Start to resume (use this if no-one should pick up tickets between days, e.g. weekends).
-              &lt;/label&gt;
             &lt;/div&gt;
+            &lt;label class="aa-check aa-stop-overnight"&gt;
+              &lt;input type="checkbox"
+                     ng-model="a.stop_overnight"
+                     ng-change="c.setBool(a, 'stop_overnight')"/&gt;
+              &lt;span&gt;Stop at end time — also stops the assigner so it won't run again the next day until a manual Start. Useful for the day before a holiday or on a Friday so tickets aren't auto-assigned over the weekend.&lt;/span&gt;
+            &lt;/label&gt;
           &lt;/div&gt;
 
           &lt;div class="aa-settings-section"&gt;

@@ -122,13 +122,13 @@
                        ng-focus="c.captureRunTime(a, 'end')"
                        ng-change="c.setRunTime(a, 'end')"/>
               </label>
-              <label class="aa-check">
-                <input type="checkbox"
-                       ng-model="a.stop_overnight"
-                       ng-change="c.setBool(a, 'stop_overnight')"/>
-                Stop overnight — at end time, also stop the assigner. Needs a manual Start to resume (use this if no-one should pick up tickets between days, e.g. weekends).
-              </label>
             </div>
+            <label class="aa-check aa-stop-overnight">
+              <input type="checkbox"
+                     ng-model="a.stop_overnight"
+                     ng-change="c.setBool(a, 'stop_overnight')"/>
+              <span>Stop at end time — also stops the assigner so it won't run again the next day until a manual Start. Useful for the day before a holiday or on a Friday so tickets aren't auto-assigned over the weekend.</span>
+            </label>
           </div>
 
           <div class="aa-settings-section">
