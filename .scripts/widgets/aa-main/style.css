@@ -1,5 +1,20 @@
 .aa-shell { padding: 16px 20px; }
 .aa-shell h2 { margin-top: 0; }
+
+.aa-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.aa-instance-clock {
+    color: #555;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    background: #f3f3f3;
+    padding: 4px 12px;
+    border-radius: 14px;
+}
+.aa-instance-clock .fa { margin-right: 6px; }
 .aa-empty { color: #888; font-style: italic; }
 
 .aa-assigner { padding: 16px 4px; }

@@ -4,13 +4,23 @@ api.controller = function($scope, $interval) {
 
     var CADENCE_MS = 5 * 60 * 1000;
 
-    var tickHandle = $interval(updateCountdowns, 1000);
-    var pollHandle = $interval(pollLastRun, 15000);
+    // Offset between this browser and the instance's clock, recomputed
+    // whenever the server gives us a fresh instanceNowMs. We add this offset
+    // to Date.now() to display the instance clock.
+    c.serverClockSkewMs = c.data && c.data.instanceNowMs
+        ? (c.data.instanceNowMs - Date.now())
+        : 0;
+
+    var tickHandle  = $interval(updateCountdowns, 1000);
+    var clockHandle = $interval(updateInstanceClock, 1000);
+    var pollHandle  = $interval(pollLastRun, 15000);
     $scope.$on('$destroy', function() {
         $interval.cancel(tickHandle);
+        $interval.cancel(clockHandle);
         $interval.cancel(pollHandle);
     });
     updateCountdowns();
+    updateInstanceClock();
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -20,6 +30,14 @@ api.controller = function($scope, $interval) {
             a.countdown = formatCountdown(a, now);
         }
     }
+
+    function updateInstanceClock() {
+        var instanceMs = Date.now() + c.serverClockSkewMs;
+        var d = new Date(instanceMs);
+        c.instanceClockDisplay = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+    }
+
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
     function formatCountdown(assigner, nowMs) {
         if (!assigner.lastRunMs) return null;
@@ -34,7 +52,11 @@ api.controller = function($scope, $interval) {
 
     function pollLastRun() {
         c.server.get({ pollLastRun: true }).then(function(response) {
-            if (!response || !response.data || !response.data.assigners) return;
+            if (!response || !response.data) return;
+            if (response.data.instanceNowMs) {
+                c.serverClockSkewMs = response.data.instanceNowMs - Date.now();
+            }
+            if (!response.data.assigners) return;
             var fresh = {};
             for (var i = 0; i < response.data.assigners.length; i++) {
                 fresh[response.data.assigners[i].sys_id] = response.data.assigners[i].lastRunMs;

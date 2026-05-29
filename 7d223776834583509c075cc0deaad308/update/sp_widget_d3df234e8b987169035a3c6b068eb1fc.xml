@@ -7,13 +7,23 @@
 
     var CADENCE_MS = 5 * 60 * 1000;
 
-    var tickHandle = $interval(updateCountdowns, 1000);
-    var pollHandle = $interval(pollLastRun, 15000);
+    // Offset between this browser and the instance's clock, recomputed
+    // whenever the server gives us a fresh instanceNowMs. We add this offset
+    // to Date.now() to display the instance clock.
+    c.serverClockSkewMs = c.data &amp;&amp; c.data.instanceNowMs
+        ? (c.data.instanceNowMs - Date.now())
+        : 0;
+
+    var tickHandle  = $interval(updateCountdowns, 1000);
+    var clockHandle = $interval(updateInstanceClock, 1000);
+    var pollHandle  = $interval(pollLastRun, 15000);
     $scope.$on('$destroy', function() {
         $interval.cancel(tickHandle);
+        $interval.cancel(clockHandle);
         $interval.cancel(pollHandle);
     });
     updateCountdowns();
+    updateInstanceClock();
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -23,6 +33,14 @@
             a.countdown = formatCountdown(a, now);
         }
     }
+
+    function updateInstanceClock() {
+        var instanceMs = Date.now() + c.serverClockSkewMs;
+        var d = new Date(instanceMs);
+        c.instanceClockDisplay = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+    }
+
+    function pad2(n) { return n &lt; 10 ? '0' + n : '' + n; }
 
     function formatCountdown(assigner, nowMs) {
         if (!assigner.lastRunMs) return null;
@@ -37,7 +55,11 @@
 
     function pollLastRun() {
         c.server.get({ pollLastRun: true }).then(function(response) {
-            if (!response || !response.data || !response.data.assigners) return;
+            if (!response || !response.data) return;
+            if (response.data.instanceNowMs) {
+                c.serverClockSkewMs = response.data.instanceNowMs - Date.now();
+            }
+            if (!response.data.assigners) return;
             var fresh = {};
             for (var i = 0; i &lt; response.data.assigners.length; i++) {
                 fresh[response.data.assigners[i].sys_id] = response.data.assigners[i].lastRunMs;
@@ -129,6 +151,21 @@
         <controller_as>c</controller_as>
         <css>.aa-shell { padding: 16px 20px; }
 .aa-shell h2 { margin-top: 0; }
+
+.aa-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.aa-instance-clock {
+    color: #555;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    background: #f3f3f3;
+    padding: 4px 12px;
+    border-radius: 14px;
+}
+.aa-instance-clock .fa { margin-right: 6px; }
 .aa-empty { color: #888; font-style: italic; }
 
 .aa-assigner { padding: 16px 4px; }
@@ -321,10 +358,12 @@
 
     handleInput();
 
-    data.user      = gs.getUserDisplayName();
-    data.isAdmin   = isAdmin;
-    data.isManager = isManager;
-    data.assigners = [];
+    data.user             = gs.getUserDisplayName();
+    data.isAdmin          = isAdmin;
+    data.isManager        = isManager;
+    data.instanceNow      = (new GlideDateTime()).getDisplayValue(); // user-TZ wall clock snapshot
+    data.instanceNowMs    = (new GlideDateTime()).getNumericValue(); // UTC ms, for client-side ticking
+    data.assigners        = [];
 
     var ar = new GlideRecord(SCOPE + 'assigner');
     ar.orderBy('name');
@@ -360,6 +399,12 @@
             // R5 — run window
             run_start_time: hhmmFromTime(ar.run_start_time.getDisplayValue()),
             run_end_time:   hhmmFromTime(ar.run_end_time.getDisplayValue()),
+            // Debug visibility — surfaces what the platform actually stores so
+            // we can diagnose the empty time-picker. Remove once stable.
+            _debug_run_start_raw:     '' + ar.getValue('run_start_time'),
+            _debug_run_start_display: '' + ar.run_start_time.getDisplayValue(),
+            _debug_run_end_raw:       '' + ar.getValue('run_end_time'),
+            _debug_run_end_display:   '' + ar.run_end_time.getDisplayValue(),
             stop_overnight: ar.stop_overnight == true,
             // R7 — reassign-responded master + eligibility flags
             reassign_responded:                  ar.reassign_responded == true,
@@ -708,7 +753,13 @@
         <sys_policy/>
         <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
         <template>&lt;div class="aa-shell"&gt;
-  &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
+  &lt;div class="aa-topbar"&gt;
+    &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
+    &lt;div class="aa-instance-clock" title="Current instance time"&gt;
+      &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
+      Instance time: {{c.instanceClockDisplay}}
+    &lt;/div&gt;
+  &lt;/div&gt;
 
   &lt;p ng-if="!data.assigners.length" class="aa-empty"&gt;
     No auto-assigners visible. You need to be in an assignment group that has one configured.

@@ -45,10 +45,12 @@
 
     handleInput();
 
-    data.user      = gs.getUserDisplayName();
-    data.isAdmin   = isAdmin;
-    data.isManager = isManager;
-    data.assigners = [];
+    data.user             = gs.getUserDisplayName();
+    data.isAdmin          = isAdmin;
+    data.isManager        = isManager;
+    data.instanceNow      = (new GlideDateTime()).getDisplayValue(); // user-TZ wall clock snapshot
+    data.instanceNowMs    = (new GlideDateTime()).getNumericValue(); // UTC ms, for client-side ticking
+    data.assigners        = [];
 
     var ar = new GlideRecord(SCOPE + 'assigner');
     ar.orderBy('name');
@@ -84,6 +86,12 @@
             // R5 — run window
             run_start_time: hhmmFromTime(ar.run_start_time.getDisplayValue()),
             run_end_time:   hhmmFromTime(ar.run_end_time.getDisplayValue()),
+            // Debug visibility — surfaces what the platform actually stores so
+            // we can diagnose the empty time-picker. Remove once stable.
+            _debug_run_start_raw:     '' + ar.getValue('run_start_time'),
+            _debug_run_start_display: '' + ar.run_start_time.getDisplayValue(),
+            _debug_run_end_raw:       '' + ar.getValue('run_end_time'),
+            _debug_run_end_display:   '' + ar.run_end_time.getDisplayValue(),
             stop_overnight: ar.stop_overnight == true,
             // R7 — reassign-responded master + eligibility flags
             reassign_responded:                  ar.reassign_responded == true,

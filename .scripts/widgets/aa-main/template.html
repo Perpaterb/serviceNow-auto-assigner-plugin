@@ -1,5 +1,11 @@
 <div class="aa-shell">
-  <h2>Auto-Assigner</h2>
+  <div class="aa-topbar">
+    <h2>Auto-Assigner</h2>
+    <div class="aa-instance-clock" title="Current instance time">
+      <i class="fa fa-clock-o"></i>
+      Instance time: {{c.instanceClockDisplay}}
+    </div>
+  </div>
 
   <p ng-if="!data.assigners.length" class="aa-empty">
     No auto-assigners visible. You need to be in an assignment group that has one configured.

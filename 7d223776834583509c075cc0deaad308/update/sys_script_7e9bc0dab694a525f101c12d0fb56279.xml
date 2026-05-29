@@ -35,6 +35,14 @@
 (function executeRule(current, previous /*null when async*/) {
     var SCOPE = 'x_1578378_aa_';
 
+    // Default the active window so the UI's time pickers have values from
+    // day one. Only set if the field is empty so we don't clobber a manager
+    // who specified times on the create form.
+    var needsUpdate = false;
+    if (!current.getValue('run_start_time')) { current.run_start_time = '00:00:00'; needsUpdate = true; }
+    if (!current.getValue('run_end_time'))   { current.run_end_time   = '23:59:59'; needsUpdate = true; }
+    if (needsUpdate) current.update();
+
     var shift = new GlideRecord(SCOPE + 'shift');
     shift.initialize();
     shift.assigner   = current.sys_id;
