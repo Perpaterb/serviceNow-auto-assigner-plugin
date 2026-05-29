@@ -12,7 +12,7 @@
   </p>
 
   <uib-tabset ng-if="data.assigners.length" active="c.activeTab">
-    <uib-tab ng-repeat="a in data.assigners" heading="{{a.name}}">
+    <uib-tab ng-repeat="a in data.assigners track by a.sys_id" heading="{{a.name}}">
       <div class="aa-assigner">
 
         <div class="aa-header">
@@ -99,14 +99,18 @@
             <div class="aa-run-row">
               <label>
                 Start
-                <input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_start_date"
+                <input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       ng-model="a.run_start_time"
+                       ng-model-options="{updateOn: 'blur'}"
                        ng-change="c.setRunTime(a, 'start')"/>
               </label>
               <label>
                 End
-                <input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_end_date"
+                <input type="text" class="form-control aa-time-input"
+                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       ng-model="a.run_end_time"
+                       ng-model-options="{updateOn: 'blur'}"
                        ng-change="c.setRunTime(a, 'end')"/>
               </label>
               <label class="aa-check">
