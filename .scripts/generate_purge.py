@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 """
-Wrap .scripts/engine.js into a sysauto_script XML record so Studio can
-import it via Apply Remote Changes.
-
-Reads:  .scripts/engine.js
-Writes: 7d223776834583509c075cc0deaad308/update/sysauto_script_<sys_id>.xml
-
-The job is created with active=false so it does not fire until a manager
-flips it on. Cadence: every 5 minutes (configurable via NF1 system
-property in a later iteration).
+Wrap .scripts/purge.js into a sysauto_script XML record. Daily cadence
+at 02:00 instance TZ. Deletes activity_log entries older than 7 days
+(R8.2).
 """
 from __future__ import annotations
 import hashlib
@@ -16,23 +10,18 @@ import html
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ENGINE_JS_PATH = REPO_ROOT / ".scripts" / "engine.js"
+JS_PATH = REPO_ROOT / ".scripts" / "purge.js"
 APP_DIR = REPO_ROOT / "7d223776834583509c075cc0deaad308"
 APP_SYS_ID = "7d223776834583509c075cc0deaad308"
 SCOPE = "x_1578378_aa"
 
-JOB_NAME = "Auto-Assigner Engine"
-JOB_SYS_ID = hashlib.md5(f"{SCOPE}|sysauto_script|engine".encode()).hexdigest()
-TIMESTAMP = "2026-05-28 13:30:00"
-
-# 5-minute cadence. sysauto_script.run_period is a Duration field stored
-# as a datetime offset from 1970-01-01 00:00:00.
-RUN_PERIOD = "1970-01-01 00:05:00"
+JOB_NAME = "Auto-Assigner Activity Log Purge"
+JOB_SYS_ID = hashlib.md5(f"{SCOPE}|sysauto_script|purge".encode()).hexdigest()
+TIMESTAMP = "2026-05-29 03:00:00"
 
 
 def main():
-    js = ENGINE_JS_PATH.read_text()
-    # XML-encode any special chars in the script.
+    js = JS_PATH.read_text()
     js_xml = html.escape(js, quote=False)
 
     xml = f"""<?xml version="1.0" encoding="UTF-8"?><record_update table="sysauto_script">
@@ -50,10 +39,10 @@ def main():
         <run_as/>
         <run_dayofmonth>1</run_dayofmonth>
         <run_dayofweek>1</run_dayofweek>
-        <run_period>{RUN_PERIOD}</run_period>
+        <run_period/>
         <run_start/>
-        <run_time>1970-01-01 00:00:00</run_time>
-        <run_type>periodically</run_type>
+        <run_time>1970-01-01 02:00:00</run_time>
+        <run_type>daily</run_type>
         <script>{js_xml}</script>
         <sys_class_name>sysauto_script</sys_class_name>
         <sys_created_by>admin</sys_created_by>
@@ -74,10 +63,9 @@ def main():
 """
 
     update_dir = APP_DIR / "update"
-    update_dir.mkdir(parents=True, exist_ok=True)
     out = update_dir / f"sysauto_script_{JOB_SYS_ID}.xml"
     out.write_text(xml)
-    print(f"Wrote {out.relative_to(REPO_ROOT)} ({len(js)} chars of JS)")
+    print(f"Wrote {out.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

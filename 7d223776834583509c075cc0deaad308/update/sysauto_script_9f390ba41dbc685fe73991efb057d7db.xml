@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sysauto_script">
+    <sysauto_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <business_calendar/>
+        <business_calendar_other/>
+        <condition/>
+        <conditional>false</conditional>
+        <name>Auto-Assigner Activity Log Purge</name>
+        <next_action/>
+        <offset/>
+        <offset_type/>
+        <priority>100</priority>
+        <run_as/>
+        <run_dayofmonth>1</run_dayofmonth>
+        <run_dayofweek>1</run_dayofweek>
+        <run_period/>
+        <run_start/>
+        <run_time>1970-01-01 02:00:00</run_time>
+        <run_type>daily</run_type>
+        <script>// Auto-Assigner activity-log purge.
+//
+// Runs daily. Deletes x_1578378_aa_activity_log rows older than 7 days
+// (R8.2). Idempotent — runs against the current set every cycle.
+//
+// Scope: x_1578378_aa
+(function execute() {
+    var SCOPE = 'x_1578378_aa_';
+    var TAG = '[' + SCOPE + 'purge]';
+
+    var cutoff = new GlideDateTime();
+    cutoff.addDaysLocalTime(-7);
+
+    var log = new GlideRecord(SCOPE + 'activity_log');
+    log.addQuery('sys_created_on', '&lt;', cutoff);
+    log.query();
+    var n = log.getRowCount();
+    if (n &gt; 0) {
+        log.deleteMultiple();
+        gs.info(TAG + ' deleted ' + n + ' activity_log row(s) older than ' + cutoff.getDisplayValue());
+    }
+})();
+</script>
+        <sys_class_name>sysauto_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+        <sys_id>9f390ba41dbc685fe73991efb057d7db</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Auto-Assigner Activity Log Purge</sys_name>
+        <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+        <sys_update_name>sysauto_script_9f390ba41dbc685fe73991efb057d7db</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        <time_zone/>
+        <upgrade_safe>false</upgrade_safe>
+    </sysauto_script>
+</record_update>
