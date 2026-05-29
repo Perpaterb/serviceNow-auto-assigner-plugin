@@ -6,6 +6,9 @@ api.controller = function($scope, $interval, $timeout) {
         return (c.data && c.data.assigners && c.data.assigners.length) ? 0 : -1;
     }
     c.activeTab = defaultTab();
+    // Stable single-element slot the "New assigner" tab repeats over so it
+    // registers after the assigner tabs (see template comment).
+    c.newTabSlot = [1];
     // The ng-repeat tabs register a tick after the static "New assigner" tab,
     // so on first paint the tabset can latch onto that last tab. Re-assert the
     // intended tab once the repeated tabs exist.

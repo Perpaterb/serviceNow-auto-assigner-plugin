@@ -462,7 +462,11 @@
       </div>
     </uib-tab>
 
-    <uib-tab index="-1">
+    <!-- Repeated (over a single-element slot) so this tab registers AFTER the
+         assigner tabs above. uib-tabset auto-selects the first-registered tab;
+         a plain static tab here links during the initial pass — before the
+         ng-repeat assigner tabs exist — and wrongly wins that auto-select. -->
+    <uib-tab ng-repeat="ignore in c.newTabSlot" index="-1">
       <uib-tab-heading><i class="fa fa-plus"></i> New assigner</uib-tab-heading>
       <div class="aa-create-form">
         <h3>Create a new auto-assigner</h3>

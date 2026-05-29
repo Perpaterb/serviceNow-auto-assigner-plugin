@@ -9,6 +9,9 @@
         return (c.data &amp;&amp; c.data.assigners &amp;&amp; c.data.assigners.length) ? 0 : -1;
     }
     c.activeTab = defaultTab();
+    // Stable single-element slot the "New assigner" tab repeats over so it
+    // registers after the assigner tabs (see template comment).
+    c.newTabSlot = [1];
     // The ng-repeat tabs register a tick after the static "New assigner" tab,
     // so on first paint the tabset can latch onto that last tab. Re-assert the
     // intended tab once the repeated tabs exist.
@@ -2217,7 +2220,11 @@
       &lt;/div&gt;
     &lt;/uib-tab&gt;
 
-    &lt;uib-tab index="-1"&gt;
+    &lt;!-- Repeated (over a single-element slot) so this tab registers AFTER the
+         assigner tabs above. uib-tabset auto-selects the first-registered tab;
+         a plain static tab here links during the initial pass — before the
+         ng-repeat assigner tabs exist — and wrongly wins that auto-select. --&gt;
+    &lt;uib-tab ng-repeat="ignore in c.newTabSlot" index="-1"&gt;
       &lt;uib-tab-heading&gt;&lt;i class="fa fa-plus"&gt;&lt;/i&gt; New assigner&lt;/uib-tab-heading&gt;
       &lt;div class="aa-create-form"&gt;
         &lt;h3&gt;Create a new auto-assigner&lt;/h3&gt;
