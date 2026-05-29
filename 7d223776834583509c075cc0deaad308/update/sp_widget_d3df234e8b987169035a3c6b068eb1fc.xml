@@ -752,11 +752,15 @@
             existing[es.getValue('table_name') + '|' + es.getValue('state_value')] = es.enabled == true;
         }
 
-        // Available states from sys_choice for each enabled type
+        // Available states for each enabled type. Try sys_choice first; if
+        // that returns nothing for a table (cross-scope reads, custom
+        // choice resolvers, etc.) fall back to GlideElement.getChoices()
+        // off a probe record.
         var rows = [];
         var seen = {};
         for (var i = 0; i &lt; enabledTypes.length; i++) {
             var tableName = enabledTypes[i];
+            var found = 0;
             try {
                 var ch = new GlideRecord('sys_choice');
                 ch.addQuery('name', tableName);
@@ -776,10 +780,38 @@
                         label: ch.getValue('label') || value,
                         enabled: existing[key] === true
                     });
+                    found++;
                 }
             } catch (e) {
                 gs.warn('[aa-main] sys_choice lookup failed for ' + tableName + ': ' + e);
             }
+            if (found === 0) {
+                try {
+                    var probe = new GlideRecord(tableName);
+                    var elem  = probe.getElement('state');
+                    if (elem) {
+                        var choices = elem.getChoices();
+                        var labels  = elem.getChoiceLabels ? elem.getChoiceLabels() : null;
+                        for (var ci = 0; ci &lt; choices.length; ci++) {
+                            var v   = '' + choices[ci];
+                            var key2 = tableName + '|' + v;
+                            if (!v || seen[key2]) continue;
+                            seen[key2] = true;
+                            var lbl = labels &amp;&amp; labels[ci] ? ('' + labels[ci]) : v;
+                            rows.push({
+                                table_name: tableName,
+                                state_value: v,
+                                label: lbl,
+                                enabled: existing[key2] === true
+                            });
+                            found++;
+                        }
+                    }
+                } catch (e2) {
+                    gs.warn('[aa-main] getChoices fallback failed for ' + tableName + ': ' + e2);
+                }
+            }
+            gs.info('[aa-main] reassign states for ' + tableName + ': ' + found + ' entries');
         }
         return rows;
     }
