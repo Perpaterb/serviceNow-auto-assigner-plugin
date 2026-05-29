@@ -296,6 +296,12 @@
     }
 
     function distribute(assignerSysId, eligible, tickets, now) {
+        // Use a moving clock that increments per assignment so each ticket
+        // writes a distinct last_assigned_at. Without this every assignment
+        // in one cycle gets the same timestamp and the next cycle's order
+        // falls back to sys_id — analysts who got more tickets can end up
+        // ahead of ones who got fewer.
+        var clock = new GlideDateTime(now);
         for (var i = 0; i &lt; tickets.length; i++) {
             if (eligible.length === 0) break;
             var pick = eligible.shift();
@@ -307,7 +313,7 @@
 
             var rr = new GlideRecord(SCOPE + 'roster_entry');
             if (rr.get(pick.rosterSysId)) {
-                rr.last_assigned_at = now;
+                rr.last_assigned_at = clock;
                 rr.last_shift = pick.shiftSysId;
                 rr.update();
             }
@@ -317,6 +323,7 @@
 
             // Round-robin: just-assigned analyst goes to the back of the line.
             eligible.push(pick);
+            clock.addSeconds(1);
         }
     }
 
