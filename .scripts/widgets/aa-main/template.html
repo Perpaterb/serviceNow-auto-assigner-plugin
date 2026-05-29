@@ -304,6 +304,30 @@
 
             </div>
           </div>
+
+          <div class="aa-settings-section">
+            <h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'act')">
+              <i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'act'), 'fa-caret-right': !c.isExpanded(a, 'act')}"></i>
+              Activity today ({{a.activityLog.length}})
+              <small>(assignments and unassignments since midnight)</small>
+            </h4>
+            <div ng-if="c.isExpanded(a, 'act')">
+              <p ng-if="!a.activityLog.length" class="aa-empty-row">
+                <em>No activity yet today.</em>
+              </p>
+              <ul class="aa-activity-list" ng-if="a.activityLog.length">
+                <li ng-repeat="e in a.activityLog track by e.sys_id">
+                  <span class="aa-activity-time aa-mono">{{e.timestamp}}</span>
+                  <span class="aa-activity-action" ng-class="'aa-action-' + e.action">{{e.action}}</span>
+                  <strong>{{e.number || '(no number)'}}</strong>
+                  <span class="aa-mono">{{e.table}}</span>
+                  <span class="aa-activity-arrow">{{e.action === 'assigned' ? '→' : '←'}}</span>
+                  <span>{{e.analyst}}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
         </div>
 
       </div>

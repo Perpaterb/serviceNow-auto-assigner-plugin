@@ -106,6 +106,7 @@
             shifts: getShifts(assignerSysId),
             roster: getRoster(assignerSysId),
             roundRobinOrder: getRoundRobinOrder(assignerSysId),
+            activityLog:     getActivityLog(assignerSysId),
             // R6 — ticket types: enabled + available
             ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
             reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables),
@@ -267,6 +268,29 @@
                 rosters.update();
             }
         }
+    }
+
+    // R8 — activity log entries created since midnight today for this
+    // assigner. Capped at 500 to keep payload sane on busy queues.
+    function getActivityLog(assignerSysId) {
+        var entries = [];
+        var log = new GlideRecord(SCOPE + 'activity_log');
+        log.addQuery('assigner', assignerSysId);
+        log.addQuery('sys_created_on', '>=', gs.beginningOfToday());
+        log.orderByDesc('sys_created_on');
+        log.setLimit(500);
+        log.query();
+        while (log.next()) {
+            entries.push({
+                sys_id:    log.getUniqueValue(),
+                number:    log.getValue('ticket_number') || '',
+                table:     log.getValue('ticket_table') || '',
+                action:    log.getValue('action') || '',
+                analyst:   log.analyst.getDisplayValue() || '',
+                timestamp: log.sys_created_on.getDisplayValue() || ''
+            });
+        }
+        return entries;
     }
 
     // Mirror of the engine's eligibility list so the manager can see who

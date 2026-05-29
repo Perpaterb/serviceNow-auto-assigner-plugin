@@ -130,6 +130,7 @@
                 local.lastRunMs       = f.lastRunMs;
                 local.running         = f.running;
                 local.roundRobinOrder = f.roundRobinOrder || local.roundRobinOrder;
+                local.activityLog     = f.activityLog     || local.activityLog;
             }
         });
     }
@@ -443,6 +444,40 @@
 }
 .aa-rr-list li:last-child { border-bottom: 0; }
 .aa-rr-last { color: #888; font-size: 12px; margin-left: auto; }
+
+.aa-activity-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 8px 0 0 0;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.aa-activity-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 13px;
+}
+.aa-activity-list li:last-child { border-bottom: 0; }
+.aa-activity-time { min-width: 150px; color: #777; }
+.aa-activity-action {
+    text-transform: uppercase;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.aa-action-assigned {
+    color: #2e7d32;
+    background: #e8f5e9;
+}
+.aa-action-unassigned {
+    color: #b35900;
+    background: #fff3e0;
+}
+.aa-activity-arrow { color: #999; }
 </css>
         <data_table>sp_instance</data_table>
         <demo_data/>
@@ -565,6 +600,7 @@
             shifts: getShifts(assignerSysId),
             roster: getRoster(assignerSysId),
             roundRobinOrder: getRoundRobinOrder(assignerSysId),
+            activityLog:     getActivityLog(assignerSysId),
             // R6 — ticket types: enabled + available
             ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
             reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables),
@@ -726,6 +762,29 @@
                 rosters.update();
             }
         }
+    }
+
+    // R8 — activity log entries created since midnight today for this
+    // assigner. Capped at 500 to keep payload sane on busy queues.
+    function getActivityLog(assignerSysId) {
+        var entries = [];
+        var log = new GlideRecord(SCOPE + 'activity_log');
+        log.addQuery('assigner', assignerSysId);
+        log.addQuery('sys_created_on', '&gt;=', gs.beginningOfToday());
+        log.orderByDesc('sys_created_on');
+        log.setLimit(500);
+        log.query();
+        while (log.next()) {
+            entries.push({
+                sys_id:    log.getUniqueValue(),
+                number:    log.getValue('ticket_number') || '',
+                table:     log.getValue('ticket_table') || '',
+                action:    log.getValue('action') || '',
+                analyst:   log.analyst.getDisplayValue() || '',
+                timestamp: log.sys_created_on.getDisplayValue() || ''
+            });
+        }
+        return entries;
     }
 
     // Mirror of the engine's eligibility list so the manager can see who
@@ -1385,6 +1444,30 @@
 
             &lt;/div&gt;
           &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'act')"&gt;
+              &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'act'), 'fa-caret-right': !c.isExpanded(a, 'act')}"&gt;&lt;/i&gt;
+              Activity today ({{a.activityLog.length}})
+              &lt;small&gt;(assignments and unassignments since midnight)&lt;/small&gt;
+            &lt;/h4&gt;
+            &lt;div ng-if="c.isExpanded(a, 'act')"&gt;
+              &lt;p ng-if="!a.activityLog.length" class="aa-empty-row"&gt;
+                &lt;em&gt;No activity yet today.&lt;/em&gt;
+              &lt;/p&gt;
+              &lt;ul class="aa-activity-list" ng-if="a.activityLog.length"&gt;
+                &lt;li ng-repeat="e in a.activityLog track by e.sys_id"&gt;
+                  &lt;span class="aa-activity-time aa-mono"&gt;{{e.timestamp}}&lt;/span&gt;
+                  &lt;span class="aa-activity-action" ng-class="'aa-action-' + e.action"&gt;{{e.action}}&lt;/span&gt;
+                  &lt;strong&gt;{{e.number || '(no number)'}}&lt;/strong&gt;
+                  &lt;span class="aa-mono"&gt;{{e.table}}&lt;/span&gt;
+                  &lt;span class="aa-activity-arrow"&gt;{{e.action === 'assigned' ? '→' : '←'}}&lt;/span&gt;
+                  &lt;span&gt;{{e.analyst}}&lt;/span&gt;
+                &lt;/li&gt;
+              &lt;/ul&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
         &lt;/div&gt;
 
       &lt;/div&gt;

@@ -194,3 +194,37 @@
 }
 .aa-rr-list li:last-child { border-bottom: 0; }
 .aa-rr-last { color: #888; font-size: 12px; margin-left: auto; }
+
+.aa-activity-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 8px 0 0 0;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.aa-activity-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 13px;
+}
+.aa-activity-list li:last-child { border-bottom: 0; }
+.aa-activity-time { min-width: 150px; color: #777; }
+.aa-activity-action {
+    text-transform: uppercase;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.aa-action-assigned {
+    color: #2e7d32;
+    background: #e8f5e9;
+}
+.aa-action-unassigned {
+    color: #b35900;
+    background: #fff3e0;
+}
+.aa-activity-arrow { color: #999; }

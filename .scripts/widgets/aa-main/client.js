@@ -127,6 +127,7 @@ api.controller = function($scope, $interval) {
                 local.lastRunMs       = f.lastRunMs;
                 local.running         = f.running;
                 local.roundRobinOrder = f.roundRobinOrder || local.roundRobinOrder;
+                local.activityLog     = f.activityLog     || local.activityLog;
             }
         });
     }
