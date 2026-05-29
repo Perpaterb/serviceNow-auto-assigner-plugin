@@ -4,12 +4,22 @@ api.controller = function($scope, $interval) {
 
     var CADENCE_MS = 5 * 60 * 1000;
 
-    // Offset between this browser and the instance's clock, recomputed
-    // whenever the server gives us a fresh instanceNowMs. We add this offset
-    // to Date.now() to display the instance clock.
-    c.serverClockSkewMs = c.data && c.data.instanceNowMs
-        ? (c.data.instanceNowMs - Date.now())
-        : 0;
+    // Skew between this browser's local clock and the instance's wall-clock,
+    // computed from the formatted instance time string. Treats the instance's
+    // wall-clock as if it were a local-TZ Date; the local Date methods then
+    // hand back hours/minutes/seconds that reflect the *instance* clock.
+    c.serverClockSkewMs = computeInstanceSkew(c.data && c.data.instanceNowDisplay);
+
+    function computeInstanceSkew(disp) {
+        if (!disp) return 0;
+        var m = ('' + disp).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+        if (!m) return 0;
+        var faked = new Date(
+            parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10),
+            parseInt(m[4], 10), parseInt(m[5], 10), parseInt(m[6], 10)
+        ).getTime();
+        return faked - Date.now();
+    }
 
     var tickHandle  = $interval(updateCountdowns, 1000);
     var clockHandle = $interval(updateInstanceClock, 1000);
@@ -53,8 +63,8 @@ api.controller = function($scope, $interval) {
     function pollLastRun() {
         c.server.get({ pollLastRun: true }).then(function(response) {
             if (!response || !response.data) return;
-            if (response.data.instanceNowMs) {
-                c.serverClockSkewMs = response.data.instanceNowMs - Date.now();
+            if (response.data.instanceNowDisplay) {
+                c.serverClockSkewMs = computeInstanceSkew(response.data.instanceNowDisplay);
             }
             if (!response.data.assigners) return;
             var fresh = {};
