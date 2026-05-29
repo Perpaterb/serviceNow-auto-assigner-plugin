@@ -8,6 +8,12 @@
     var ENGINE_JOB_SYS_ID = '4a6860f1fc1b9fe361220028cfb23965';
     var ENGINE_JOB_NAME   = 'Auto-Assigner Engine';
 
+    // Pastel palette offered for the per-assigner tab/panel colour. '' is the
+    // default (no tint). Writes are validated against this list so only these
+    // values can ever reach the ng-style binding.
+    var BG_PALETTE = ['', '#FADBD8', '#FDEBD0', '#FCF3CF', '#D5F5E3', '#D1F2EB',
+                      '#D6EAF8', '#E8DAEF', '#FADBE9', '#EAECEE', '#E5E0D8'];
+
     // Type-list config, declared up here so it's initialized before the
     // main loop runs (function declarations hoist; var initializations
     // do not).
@@ -58,6 +64,7 @@
     // this (shared by all assigners — one job drives them) so it stays correct
     // even right after an assigner is started, when its own last_run is stale.
     data.engineNextRunMs  = getEngineNextRunMs();
+    data.bgPalette        = BG_PALETTE;
     data.assigners        = [];
 
     // The instance's wall-clock time formatted in the system default TZ
@@ -142,6 +149,7 @@
             name: ar.name + '',
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
+            bg_color: ar.getValue('bg_color') || '',
             canManage: canEditAssigner(ar),
             lastRunMs: ar.getValue('last_run') ? ar.last_run.dateNumericValue() : null,
             // R5 — run window
@@ -219,6 +227,11 @@
                     var nm = ('' + (input.name || '')).trim();
                     if (nm) a.name = nm.substring(0, 100);
                 });
+                break;
+            case 'setBgColor':
+                var color = '' + (input.color || '');
+                if (BG_PALETTE.indexOf(color) === -1) break; // only known swatches
+                editAssigner(input.assignerSysId, function(a) { a.bg_color = color; });
                 break;
             case 'deleteAssigner':
                 deleteAssigner(input.assignerSysId);

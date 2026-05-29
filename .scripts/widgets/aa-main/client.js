@@ -60,6 +60,14 @@ api.controller = function($scope, $interval, $timeout) {
         c.confirmDelete[a.sys_id] = false;
     };
 
+    c.setColor = function(a, color) {
+        a.bg_color = color; // optimistic — repaint tab + panel immediately
+        c.data.action = 'setBgColor';
+        c.data.assignerSysId = a.sys_id;
+        c.data.color = color;
+        c.server.update();
+    };
+
     c.renameAssigner = function(a) {
         var name = (c.nameDrafts[a.sys_id] || '').replace(/^\s+|\s+$/g, '');
         if (!name || name === a.name) return;

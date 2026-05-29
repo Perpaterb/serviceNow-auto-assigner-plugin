@@ -63,6 +63,14 @@
         c.confirmDelete[a.sys_id] = false;
     };
 
+    c.setColor = function(a, color) {
+        a.bg_color = color; // optimistic — repaint tab + panel immediately
+        c.data.action = 'setBgColor';
+        c.data.assignerSysId = a.sys_id;
+        c.data.color = color;
+        c.server.update();
+    };
+
     c.renameAssigner = function(a) {
         var name = (c.nameDrafts[a.sys_id] || '').replace(/^\s+|\s+$/g, '');
         if (!name || name === a.name) return;
@@ -763,6 +771,37 @@
     gap: 2px;
 }
 
+/* Tab colour picker */
+.aa-tab-chip {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 10px;
+}
+.aa-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.aa-swatch {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #c4ccd4;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5a5a5a;
+}
+.aa-swatch:hover { border-color: #8a949e; }
+.aa-swatch-selected {
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.25);
+}
+.aa-swatch-none { background: #fff; color: #b0b0b0; }
+.aa-swatch .fa { font-size: 13px; }
+
 .aa-shift-locked { color: #b35900; font-weight: 600; }
 .aa-shift-locked .fa { margin-right: 6px; }
 
@@ -808,6 +847,12 @@
     // The scheduled job that runs the engine (see generate_engine.py).
     var ENGINE_JOB_SYS_ID = '4a6860f1fc1b9fe361220028cfb23965';
     var ENGINE_JOB_NAME   = 'Auto-Assigner Engine';
+
+    // Pastel palette offered for the per-assigner tab/panel colour. '' is the
+    // default (no tint). Writes are validated against this list so only these
+    // values can ever reach the ng-style binding.
+    var BG_PALETTE = ['', '#FADBD8', '#FDEBD0', '#FCF3CF', '#D5F5E3', '#D1F2EB',
+                      '#D6EAF8', '#E8DAEF', '#FADBE9', '#EAECEE', '#E5E0D8'];
 
     // Type-list config, declared up here so it's initialized before the
     // main loop runs (function declarations hoist; var initializations
@@ -859,6 +904,7 @@
     // this (shared by all assigners — one job drives them) so it stays correct
     // even right after an assigner is started, when its own last_run is stale.
     data.engineNextRunMs  = getEngineNextRunMs();
+    data.bgPalette        = BG_PALETTE;
     data.assigners        = [];
 
     // The instance's wall-clock time formatted in the system default TZ
@@ -943,6 +989,7 @@
             name: ar.name + '',
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
+            bg_color: ar.getValue('bg_color') || '',
             canManage: canEditAssigner(ar),
             lastRunMs: ar.getValue('last_run') ? ar.last_run.dateNumericValue() : null,
             // R5 — run window
@@ -1020,6 +1067,11 @@
                     var nm = ('' + (input.name || '')).trim();
                     if (nm) a.name = nm.substring(0, 100);
                 });
+                break;
+            case 'setBgColor':
+                var color = '' + (input.color || '');
+                if (BG_PALETTE.indexOf(color) === -1) break; // only known swatches
+                editAssigner(input.assignerSysId, function(a) { a.bg_color = color; });
                 break;
             case 'deleteAssigner':
                 deleteAssigner(input.assignerSysId);
@@ -1766,8 +1818,11 @@
   &lt;/div&gt;
 
   &lt;uib-tabset active="c.activeTab"&gt;
-    &lt;uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index" heading="{{a.name}}"&gt;
-      &lt;div class="aa-assigner"&gt;
+    &lt;uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index"&gt;
+      &lt;uib-tab-heading&gt;
+        &lt;span class="aa-tab-chip" ng-style="a.bg_color ? {'background-color': a.bg_color} : {}"&gt;{{a.name}}&lt;/span&gt;
+      &lt;/uib-tab-heading&gt;
+      &lt;div class="aa-assigner" ng-style="a.bg_color ? {'background-color': a.bg_color} : {}"&gt;
 
         &lt;div class="aa-header"&gt;
           &lt;div&gt;
@@ -2108,6 +2163,22 @@
                       ng-click="c.renameAssigner(a)"
                       ng-disabled="!c.nameDrafts[a.sys_id] || c.nameDrafts[a.sys_id] === a.name"&gt;
                 Save name
+              &lt;/button&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Tab colour&lt;/h4&gt;
+            &lt;p class="aa-help"&gt;Tint this assigner's tab and panel so it's easy to tell apart from the others.&lt;/p&gt;
+            &lt;div class="aa-swatches"&gt;
+              &lt;button ng-repeat="col in data.bgPalette track by $index"
+                      type="button"
+                      class="aa-swatch"
+                      ng-class="{'aa-swatch-selected': (a.bg_color || '') === col, 'aa-swatch-none': !col}"
+                      ng-style="col ? {'background-color': col} : {}"
+                      title="{{col || 'No colour'}}"
+                      ng-click="c.setColor(a, col)"&gt;
+                &lt;i class="fa" ng-class="{'fa-check': (a.bg_color || '') === col, 'fa-ban': !col &amp;&amp; (a.bg_color || '') !== col}"&gt;&lt;/i&gt;
               &lt;/button&gt;
             &lt;/div&gt;
           &lt;/div&gt;

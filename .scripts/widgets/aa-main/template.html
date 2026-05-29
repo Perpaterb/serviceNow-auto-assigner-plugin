@@ -8,8 +8,11 @@
   </div>
 
   <uib-tabset active="c.activeTab">
-    <uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index" heading="{{a.name}}">
-      <div class="aa-assigner">
+    <uib-tab ng-repeat="a in data.assigners track by a.sys_id" index="$index">
+      <uib-tab-heading>
+        <span class="aa-tab-chip" ng-style="a.bg_color ? {'background-color': a.bg_color} : {}">{{a.name}}</span>
+      </uib-tab-heading>
+      <div class="aa-assigner" ng-style="a.bg_color ? {'background-color': a.bg_color} : {}">
 
         <div class="aa-header">
           <div>
@@ -350,6 +353,22 @@
                       ng-click="c.renameAssigner(a)"
                       ng-disabled="!c.nameDrafts[a.sys_id] || c.nameDrafts[a.sys_id] === a.name">
                 Save name
+              </button>
+            </div>
+          </div>
+
+          <div class="aa-settings-section">
+            <h4>Tab colour</h4>
+            <p class="aa-help">Tint this assigner's tab and panel so it's easy to tell apart from the others.</p>
+            <div class="aa-swatches">
+              <button ng-repeat="col in data.bgPalette track by $index"
+                      type="button"
+                      class="aa-swatch"
+                      ng-class="{'aa-swatch-selected': (a.bg_color || '') === col, 'aa-swatch-none': !col}"
+                      ng-style="col ? {'background-color': col} : {}"
+                      title="{{col || 'No colour'}}"
+                      ng-click="c.setColor(a, col)">
+                <i class="fa" ng-class="{'fa-check': (a.bg_color || '') === col, 'fa-ban': !col && (a.bg_color || '') !== col}"></i>
               </button>
             </div>
           </div>

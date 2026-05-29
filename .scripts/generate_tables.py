@@ -61,6 +61,7 @@ TABLES = [
             ("reassign_state_new", "Reassign: New", "boolean", None, "false", False),
             ("reassign_state_onhold_to_inprogress", "Reassign: On Hold to In Progress", "boolean", None, "false", False),
             ("last_run", "Last run", "glide_date_time", None, "", False),
+            ("bg_color", "Background colour", "string", 20, "", False),
         ],
     },
     {

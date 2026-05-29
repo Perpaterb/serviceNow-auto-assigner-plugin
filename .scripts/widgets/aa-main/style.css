@@ -312,6 +312,37 @@
     gap: 2px;
 }
 
+/* Tab colour picker */
+.aa-tab-chip {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 10px;
+}
+.aa-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.aa-swatch {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #c4ccd4;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5a5a5a;
+}
+.aa-swatch:hover { border-color: #8a949e; }
+.aa-swatch-selected {
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.25);
+}
+.aa-swatch-none { background: #fff; color: #b0b0b0; }
+.aa-swatch .fa { font-size: 13px; }
+
 .aa-shift-locked { color: #b35900; font-weight: 600; }
 .aa-shift-locked .fa { margin-right: 6px; }
 
