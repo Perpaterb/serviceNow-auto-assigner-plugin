@@ -1,0 +1,5 @@
+title: Auto-Assigner
+description: Fairly distribute unassigned tickets across a group's available analysts.
+theme: jekyll-theme-cayman
+# Relative links between the .md files work on GitHub Pages because the
+# jekyll-relative-links plugin is enabled by default there.
