@@ -53,9 +53,9 @@
         gs.info(TAG + ' &gt;&gt;&gt; ' + a.name + ' (' + assignerSysId + ') nowSec=' + nowSec
                 + ' display="' + now.getDisplayValue() + '"');
 
-        // 1. Time-window gate
-        var startSec = timeFieldToSeconds(a.getValue('run_start_time'));
-        var endSec   = timeFieldToSeconds(a.getValue('run_end_time'));
+        // 1. Time-window gate — display values are in wall-clock TZ so they match nowSec
+        var startSec = timeFieldToSeconds(a.run_start_time.getDisplayValue());
+        var endSec   = timeFieldToSeconds(a.run_end_time.getDisplayValue());
         gs.info(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
                 + ' stop_overnight=' + a.stop_overnight);
         if (startSec !== null &amp;&amp; nowSec &lt; startSec) { gs.info(TAG + '   skip: before start'); return; }
@@ -104,10 +104,11 @@
         return parseInt(p[0], 10) * 3600 + parseInt(p[1], 10) * 60 + parseInt(p[2], 10);
     }
 
-    function timeFieldToSeconds(timeStr) {
-        if (!timeStr) return null;
-        // glide_time stored as "1970-01-01 HH:MM:SS"
-        var m = ('' + timeStr).match(/(\d{2}):(\d{2}):(\d{2})$/);
+    function timeFieldToSeconds(displayStr) {
+        // Pass the field's getDisplayValue() — already in user/instance TZ as wall-clock.
+        // For a glide_time field, display is "HH:MM:SS"; for glide_date_time it's "yyyy-MM-dd HH:mm:ss".
+        if (!displayStr) return null;
+        var m = ('' + displayStr).match(/(\d{2}):(\d{2}):(\d{2})/);
         if (!m) return null;
         return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
     }
@@ -173,10 +174,10 @@
                 gs.info(TAG + '   skip ' + label + ': shift not found ' + shiftSysId);
                 continue;
             }
-            var startSec = timeFieldToSeconds(shift.getValue('start_time'));
-            var endSec   = timeFieldToSeconds(shift.getValue('end_time'));
+            var startSec = timeFieldToSeconds(shift.start_time.getDisplayValue());
+            var endSec   = timeFieldToSeconds(shift.end_time.getDisplayValue());
             gs.info(TAG + '   candidate ' + label + ' shift=' + shift.name
-                    + ' raw_start="' + shift.getValue('start_time') + '" raw_end="' + shift.getValue('end_time')
+                    + ' display_start="' + shift.start_time.getDisplayValue() + '" display_end="' + shift.end_time.getDisplayValue()
                     + '" startSec=' + startSec + ' endSec=' + endSec);
             if (startSec === null || endSec === null) {
                 gs.info(TAG + '   skip ' + label + ': could not parse shift times');
@@ -205,8 +206,8 @@
         breaks.addQuery('shift', shiftSysId);
         breaks.query();
         while (breaks.next()) {
-            var s = timeFieldToSeconds(breaks.getValue('start_time'));
-            var e = timeFieldToSeconds(breaks.getValue('end_time'));
+            var s = timeFieldToSeconds(breaks.start_time.getDisplayValue());
+            var e = timeFieldToSeconds(breaks.end_time.getDisplayValue());
             if (s === null || e === null) continue;
             if (nowSec &gt;= s &amp;&amp; nowSec &lt;= e) return true;
         }
