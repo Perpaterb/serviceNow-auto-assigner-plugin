@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_related sys_domain="global" table="x_1578378_aa_assigner" version="2" view="">
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Assigner - Default view" name="x_1578378_aa_assigner" related_list="NULL" sys_domain="global" view="Default view">5a5bf13b74d13772819b92d33140ce41</list_id>
+            <order_by/>
+            <position>0</position>
+            <related_list>x_1578378_aa_shift.assigner</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_id>ed0d323efb5151728ab69f325274a6bb</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Assigner - Default view" name="x_1578378_aa_assigner" related_list="NULL" sys_domain="global" view="Default view">5a5bf13b74d13772819b92d33140ce41</list_id>
+            <order_by/>
+            <position>1</position>
+            <related_list>x_1578378_aa_roster_entry.assigner</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_id>7bec763d6a26aaf7e736126d93b3cebc</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Assigner - Default view" name="x_1578378_aa_assigner" related_list="NULL" sys_domain="global" view="Default view">5a5bf13b74d13772819b92d33140ce41</list_id>
+            <order_by/>
+            <position>2</position>
+            <related_list>x_1578378_aa_ticket_type_selection.assigner</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_id>d8f93e8138f25a070e6e432271417b43</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Assigner - Default view" name="x_1578378_aa_assigner" related_list="NULL" sys_domain="global" view="Default view">5a5bf13b74d13772819b92d33140ce41</list_id>
+            <order_by/>
+            <position>3</position>
+            <related_list>x_1578378_aa_reassign_type_selection.assigner</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_id>a06062b36ed24be1f69f7cec407205c1</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Assigner - Default view" name="x_1578378_aa_assigner" related_list="NULL" sys_domain="global" view="Default view">5a5bf13b74d13772819b92d33140ce41</list_id>
+            <order_by/>
+            <position>4</position>
+            <related_list>x_1578378_aa_activity_log.assigner</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_id>dea594903f30154f2bc19e93b26836b7</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list action="INSERT_OR_UPDATE">
+            <calculated_name>Assigner - Default view</calculated_name>
+            <filter/>
+            <name>x_1578378_aa_assigner</name>
+            <order_by/>
+            <position/>
+            <related_list/>
+            <sys_class_name>sys_ui_related_list</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-29 03:00:00</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>5a5bf13b74d13772819b92d33140ce41</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>Assigner - Default view</sys_name>
+            <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+            <sys_update_name>sys_ui_related_x_1578378_aa_assigner_null</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-29 03:00:00</sys_updated_on>
+            <sys_user/>
+            <view display_value="Default view" name="NULL">Default view</view>
+            <view_name/>
+        </sys_ui_related_list>
+    </sys_ui_related>
+</record_update>
