@@ -1963,18 +1963,16 @@
                 &lt;input type="text" class="form-control aa-time-input"
                        maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_start_time"
-                       ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'start')"
-                       ng-change="c.setRunTime(a, 'start')"/&gt;
+                       ng-blur="c.setRunTime(a, 'start')"/&gt;
               &lt;/label&gt;
               &lt;label&gt;
                 End
                 &lt;input type="text" class="form-control aa-time-input"
                        maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_end_time"
-                       ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'end')"
-                       ng-change="c.setRunTime(a, 'end')"/&gt;
+                       ng-blur="c.setRunTime(a, 'end')"/&gt;
               &lt;/label&gt;
             &lt;/div&gt;
             &lt;label class="aa-check aa-stop-overnight"&gt;
