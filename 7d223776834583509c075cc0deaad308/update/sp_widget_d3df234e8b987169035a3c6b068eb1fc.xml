@@ -305,6 +305,17 @@
 .aa-mono { font-family: monospace; color: #888; font-size: 12px; }
 .aa-help { font-size: 13px; color: #666; margin: 6px 0; }
 
+.aa-debug {
+    background: #fff8e1;
+    color: #5d4037;
+    border: 1px dashed #ffb300;
+    font-size: 12px;
+    padding: 6px 10px;
+    margin: 8px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
 .aa-search { margin-bottom: 8px; font-size: 13px; }
 .aa-scroll { max-height: 260px; overflow-y: auto; }
 </css>
@@ -860,6 +871,8 @@
           &lt;div class="aa-settings-section"&gt;
             &lt;h4&gt;Active window&lt;/h4&gt;
             &lt;p class="aa-help"&gt;Tickets are only assigned (or unassigned) inside the active window. Outside it the assigner is idle even when Running is on.&lt;/p&gt;
+            &lt;pre class="aa-debug"&gt;DEBUG start raw=&amp;quot;{{a._debug_run_start_raw}}&amp;quot; display=&amp;quot;{{a._debug_run_start_display}}&amp;quot; parsed=&amp;quot;{{a.run_start_time}}&amp;quot;
+DEBUG end   raw=&amp;quot;{{a._debug_run_end_raw}}&amp;quot;   display=&amp;quot;{{a._debug_run_end_display}}&amp;quot;   parsed=&amp;quot;{{a.run_end_time}}&amp;quot;&lt;/pre&gt;
             &lt;div class="aa-run-row"&gt;
               &lt;label&gt;
                 Start
