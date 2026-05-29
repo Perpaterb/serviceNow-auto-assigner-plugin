@@ -19,7 +19,7 @@ you the link, typically `/sp?id=auto-assigner`).
 Each auto-assigner appears as its own **tab** across the top. Click a tab to see
 that assigner; the page opens on the first one.
 
-![Assigner tabs](screenshots/assigner-tabs.png)
+![Assigner tabs](screenshots/Admin_and_queue_manager_view.png)
 
 ### Creating an assigner
 
@@ -30,7 +30,7 @@ A new assigner starts **stopped**, with a 24-hour active window and a default
 **09:00–17:00** shift (with a 12:30–13:30 break) already set up, so you can fine
 tune everything afterwards.
 
-![Create a new assigner](screenshots/create-assigner.png)
+![Create a new assigner](screenshots/Create_new_auto_assigner_page.png)
 
 > You can create more than one assigner for the same group — for example a
 > day-shift and a night-shift assigner with different working hours.
@@ -47,7 +47,9 @@ assignment group appears in one of them.
   dropdown. Only people who are working *and* currently on shift (and not on a
   break) receive tickets.
 
-![Working and not-working lists](screenshots/roster-working.png)
+![Working and not-working lists](screenshots/Set_the_working_analysts.png)
+
+![Selecting an analyst's shift](screenshots/Select_an_analysts_shift.png)
 
 Group membership is kept in sync automatically: add someone to the underlying
 assignment group and they show up here; remove them and they drop off.
@@ -60,7 +62,7 @@ Use the **Start / Stop** button in the header to turn an assigner on or off.
 While running, the header shows a live status and a **"Next run in …"** countdown
 to the next assignment cycle (the engine runs every few minutes).
 
-![Status and countdown](screenshots/active-window.png)
+![Status, countdown and active window](screenshots/Set_asctive_window_when_auto_assinger_will_assigne_and_unassigne_tickets.png)
 
 ### Active window (working hours)
 
@@ -89,7 +91,7 @@ tickets from (Incident, Catalog Task, Change Task, and so on). Move a type to
 **Active** to include it; only *unassigned* tickets of the active types, sitting
 in this assigner's group, are distributed.
 
-![Ticket types](screenshots/ticket-types.png)
+![Ticket types](screenshots/Set_what_ticket_types_will_be_assigned_if_not_assigned.png)
 
 ### How the round-robin works
 
@@ -103,6 +105,8 @@ deliberately ignored; the goal is even *distribution*, not even *backlog*.
 
 The **Round-robin order** panel shows the current line-up — who's next and when
 each person was last assigned.
+
+![Round-robin order — who's next for a ticket](screenshots/See_the_order_of_next_to_get_a_ticket.png)
 
 ---
 
@@ -120,7 +124,7 @@ the assigner take those tickets back so they're picked up again next cycle.
 A ticket is only unassigned if it's assigned to someone currently **not
 working**, on one of the chosen types, in one of the chosen states.
 
-![Reassign settings](screenshots/reassign.png)
+![Reassign settings](screenshots/Select_if_and_what_tickest_will_be_unassigned_if_analysts_are_not_working.png)
 
 ---
 
@@ -138,7 +142,7 @@ Open **Shifts & settings** (the gear button in the header) to manage shifts.
 Changes save automatically as you edit — there are no Save buttons. Removing a
 shift or break applies immediately.
 
-![Shifts and breaks](screenshots/shifts-breaks.png)
+![Shifts and breaks](screenshots/Create_shifts_with_break_times.png)
 
 > **Shifts can only be changed while the assigner is stopped.** Press Stop first;
 > the editing controls unlock. Deleting a shift that people are on moves those
@@ -152,7 +156,7 @@ In **Shifts & settings → Tab colour**, pick a pastel colour to tint this
 assigner's tab and panel. It's purely visual — handy when you run several
 assigners and want to tell them apart at a glance.
 
-![Tab colour picker](screenshots/tab-colour.png)
+![The Shifts & settings page, including the tab colour picker](screenshots/Settings_page.png)
 
 ---
 
@@ -162,7 +166,7 @@ The **Activity today** section lists every assignment and unassignment made
 since midnight — ticket number, type, the analyst, and the time — newest first.
 It's a quick way to confirm the assigner is doing what you expect.
 
-![Activity today](screenshots/activity-today.png)
+![Activity today](screenshots/See_the_days_activity.png)
 
 ---
 
@@ -182,4 +186,6 @@ Two notes on the manager role:
   impersonation) after the role is granted, or you'll still see the read-only
   view.
 
-![Read-only view](screenshots/read-only.png)
+![Granting the queue manager role](screenshots/Required_role_for_queue_manager.png)
+
+![Read-only analyst view](screenshots/Analyst_view.png)

@@ -1,24 +1,20 @@
 # Screenshots
 
-Drop your PNG screenshots here using the file names below. The user guide and
-store listing already reference them, so once the files exist the images appear
-automatically (on GitHub and on the published docs site).
+These images are used by the [user guide](../user-guide.md), the
+[landing page](../index.md), and can be uploaded to the ServiceNow Store listing.
 
-Aim for a consistent browser width and a clean demo instance with realistic
-sample data. PNG, roughly 1200–1600px wide.
-
-| File | What to capture |
-|------|-----------------|
-| `overview.png` | The whole Auto-Assigner page with a couple of tabs. |
-| `assigner-tabs.png` | Close-up of the tab strip (with the + New assigner tab). |
-| `create-assigner.png` | The New assigner tab with group + name filled in. |
-| `roster-working.png` | Working / Not-working lists with shifts selected. |
-| `active-window.png` | Header status + countdown, and the Active window fields. |
-| `ticket-types.png` | Ticket types section, a few types active. |
-| `reassign.png` | The "Unassign from not-working analysts" section expanded. |
-| `shifts-breaks.png` | Shifts & settings showing shifts with breaks. |
-| `tab-colour.png` | The Tab colour swatch picker. |
-| `activity-today.png` | Activity today list with a few entries. |
-| `read-only.png` | The read-only view as seen by a non-manager. |
-
-These same images can be uploaded to the ServiceNow Store listing.
+| File | Used for |
+|------|----------|
+| `Admin_and_queue_manager_view.png` | Overview / the full manager view with tabs. |
+| `Create_new_auto_assigner_page.png` | Creating a new assigner. |
+| `Set_the_working_analysts.png` | Working / Not-working roster. |
+| `Select_an_analysts_shift.png` | Choosing an analyst's shift. |
+| `Set_asctive_window_when_auto_assinger_will_assigne_and_unassigne_tickets.png` | Status, countdown, and the active window. |
+| `Set_what_ticket_types_will_be_assigned_if_not_assigned.png` | Ticket-type selection. |
+| `Select_if_and_what_tickest_will_be_unassigned_if_analysts_are_not_working.png` | Unassign-from-not-working settings. |
+| `Create_shifts_with_break_times.png` | Shifts with breaks. |
+| `Settings_page.png` | The Shifts & settings page (rename, colour, shifts). |
+| `See_the_order_of_next_to_get_a_ticket.png` | Round-robin order panel. |
+| `See_the_days_activity.png` | Activity today. |
+| `Required_role_for_queue_manager.png` | Granting the queue manager role. |
+| `Analyst_view.png` | The read-only analyst view. |
