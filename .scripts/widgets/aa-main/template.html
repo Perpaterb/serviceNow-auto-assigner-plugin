@@ -152,8 +152,12 @@
           </div>
 
           <div class="aa-settings-section">
-            <h4>Ticket types <small>(picks up unassigned tickets of these types)</small></h4>
-            <div class="aa-rosters">
+            <h4 class="aa-collapsible" ng-click="a.showTicketTypes = !a.showTicketTypes">
+              <i class="fa" ng-class="{'fa-caret-down': a.showTicketTypes, 'fa-caret-right': !a.showTicketTypes}"></i>
+              Ticket types ({{(a.ticketTypes | filter:{enabled:true}).length}})
+              <small>(picks up unassigned tickets of these types)</small>
+            </h4>
+            <div class="aa-rosters" ng-if="a.showTicketTypes">
               <div class="aa-list">
                 <h4>Active ({{(a.ticketTypes | filter:{enabled:true}).length}})</h4>
                 <ul>
@@ -206,8 +210,11 @@
             </label>
 
             <div class="aa-reassign-body" ng-if="a.reassign_responded">
-              <p class="aa-help">Apply to these ticket types:</p>
-              <div class="aa-rosters">
+              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignTypes = !a.showReassignTypes">
+                <i class="fa" ng-class="{'fa-caret-down': a.showReassignTypes, 'fa-caret-right': !a.showReassignTypes}"></i>
+                Apply to these ticket types ({{(a.reassignTypes | filter:{enabled:true}).length}})
+              </h4>
+              <div class="aa-rosters" ng-if="a.showReassignTypes">
                 <div class="aa-list">
                   <h4>Active ({{(a.reassignTypes | filter:{enabled:true}).length}})</h4>
                   <ul>
@@ -249,11 +256,15 @@
                 </div>
               </div>
 
-              <p class="aa-help" style="margin-top: 16px;">When a ticket is in one of these states (and assigned to a not-working analyst), unassign it:</p>
-              <p ng-if="!a.reassignStates.length" class="aa-empty-row">
+              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignStates = !a.showReassignStates">
+                <i class="fa" ng-class="{'fa-caret-down': a.showReassignStates, 'fa-caret-right': !a.showReassignStates}"></i>
+                When a ticket is in one of these states ({{(a.reassignStates | filter:{enabled:true}).length}})
+                <small>(and assigned to a not-working analyst, unassign it)</small>
+              </h4>
+              <p ng-if="a.showReassignStates && !a.reassignStates.length" class="aa-empty-row">
                 <em>Add a ticket type above to see its possible states here.</em>
               </p>
-              <div class="aa-rosters" ng-if="a.reassignStates.length">
+              <div class="aa-rosters" ng-if="a.showReassignStates && a.reassignStates.length">
                 <div class="aa-list">
                   <h4>Active ({{(a.reassignStates | filter:{enabled:true}).length}})</h4>
                   <ul>
