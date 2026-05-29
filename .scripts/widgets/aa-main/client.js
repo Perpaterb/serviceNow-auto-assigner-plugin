@@ -5,6 +5,9 @@ api.controller = function($scope, $interval, $timeout) {
     function defaultTab() {
         return (c.data && c.data.assigners && c.data.assigners.length) ? 0 : -1;
     }
+    // Public documentation site (GitHub Pages). Change here if it moves.
+    c.helpUrl = 'https://perpaterb.github.io/serviceNow-auto-assigner-plugin/';
+
     c.activeTab = defaultTab();
     // Stable single-element slot the "New assigner" tab repeats over so it
     // registers after the assigner tabs (see template comment). Empty for

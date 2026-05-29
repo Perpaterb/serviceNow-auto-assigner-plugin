@@ -14,6 +14,18 @@
     justify-content: space-between;
     align-items: center;
 }
+.aa-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.aa-help-link {
+    color: #1565c0;
+    font-size: 14px;
+    white-space: nowrap;
+}
+.aa-help-link:hover { text-decoration: underline; }
+.aa-help-link .fa { margin-right: 5px; }
 .aa-instance-clock {
     color: #555;
     font-size: 14px;

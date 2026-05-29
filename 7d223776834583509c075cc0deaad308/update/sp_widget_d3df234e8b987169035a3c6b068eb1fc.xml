@@ -8,6 +8,9 @@
     function defaultTab() {
         return (c.data &amp;&amp; c.data.assigners &amp;&amp; c.data.assigners.length) ? 0 : -1;
     }
+    // Public documentation site (GitHub Pages). Change here if it moves.
+    c.helpUrl = 'https://perpaterb.github.io/serviceNow-auto-assigner-plugin/';
+
     c.activeTab = defaultTab();
     // Stable single-element slot the "New assigner" tab repeats over so it
     // registers after the assigner tabs (see template comment). Empty for
@@ -474,6 +477,18 @@
     justify-content: space-between;
     align-items: center;
 }
+.aa-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.aa-help-link {
+    color: #1565c0;
+    font-size: 14px;
+    white-space: nowrap;
+}
+.aa-help-link:hover { text-decoration: underline; }
+.aa-help-link .fa { margin-right: 5px; }
 .aa-instance-clock {
     color: #555;
     font-size: 14px;
@@ -1823,9 +1838,15 @@
         <template>&lt;div class="aa-shell"&gt;
   &lt;div class="aa-topbar"&gt;
     &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
-    &lt;div class="aa-instance-clock" title="Current instance time (system TZ)"&gt;
-      &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
-      Instance time: {{c.instanceClockDisplay}}
+    &lt;div class="aa-topbar-right"&gt;
+      &lt;a class="aa-help-link" ng-href="{{c.helpUrl}}" target="_blank" rel="noopener"
+         title="Open the Auto-Assigner documentation in a new tab"&gt;
+        &lt;i class="fa fa-question-circle"&gt;&lt;/i&gt; Help
+      &lt;/a&gt;
+      &lt;div class="aa-instance-clock" title="Current instance time (system TZ)"&gt;
+        &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
+        Instance time: {{c.instanceClockDisplay}}
+      &lt;/div&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 
@@ -1940,7 +1961,7 @@
               &lt;label&gt;
                 Start
                 &lt;input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_start_time"
                        ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'start')"
@@ -1949,7 +1970,7 @@
               &lt;label&gt;
                 End
                 &lt;input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_end_time"
                        ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'end')"

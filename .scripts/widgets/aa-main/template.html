@@ -1,9 +1,15 @@
 <div class="aa-shell">
   <div class="aa-topbar">
     <h2>Auto-Assigner</h2>
-    <div class="aa-instance-clock" title="Current instance time (system TZ)">
-      <i class="fa fa-clock-o"></i>
-      Instance time: {{c.instanceClockDisplay}}
+    <div class="aa-topbar-right">
+      <a class="aa-help-link" ng-href="{{c.helpUrl}}" target="_blank" rel="noopener"
+         title="Open the Auto-Assigner documentation in a new tab">
+        <i class="fa fa-question-circle"></i> Help
+      </a>
+      <div class="aa-instance-clock" title="Current instance time (system TZ)">
+        <i class="fa fa-clock-o"></i>
+        Instance time: {{c.instanceClockDisplay}}
+      </div>
     </div>
   </div>
 
@@ -118,7 +124,7 @@
               <label>
                 Start
                 <input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_start_time"
                        ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'start')"
@@ -127,7 +133,7 @@
               <label>
                 End
                 <input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
+                       maxlength="5" placeholder="HH:MM"
                        ng-model="a.run_end_time"
                        ng-model-options="{updateOn: 'blur'}"
                        ng-focus="c.captureRunTime(a, 'end')"
