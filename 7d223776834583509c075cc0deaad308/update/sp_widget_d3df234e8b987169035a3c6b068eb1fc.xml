@@ -334,8 +334,7 @@
             &lt;h4&gt;Not working ({{(a.roster | filter:{working:false}).length}})&lt;/h4&gt;
             &lt;ul&gt;
               &lt;li ng-repeat="r in a.roster | filter:{working:false} track by r.sys_id"&gt;
-                &lt;strong class="aa-name"&gt;{{r.analyst}}&lt;/strong&gt;
-                &lt;span class="aa-row-controls"&gt;
+                &lt;span class="aa-row-controls aa-row-controls-left"&gt;
                   &lt;button class="btn btn-xs btn-default aa-move-btn"
                           ng-if="a.canManage"
                           title="Move to Working"
@@ -343,6 +342,7 @@
                     &lt;i class="fa fa-arrow-left"&gt;&lt;/i&gt;
                   &lt;/button&gt;
                 &lt;/span&gt;
+                &lt;strong class="aa-name"&gt;{{r.analyst}}&lt;/strong&gt;
               &lt;/li&gt;
               &lt;li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row"&gt;
                 &lt;em&gt;Empty&lt;/em&gt;

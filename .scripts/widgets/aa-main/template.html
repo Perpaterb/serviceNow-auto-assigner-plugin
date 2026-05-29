@@ -60,8 +60,7 @@
             <h4>Not working ({{(a.roster | filter:{working:false}).length}})</h4>
             <ul>
               <li ng-repeat="r in a.roster | filter:{working:false} track by r.sys_id">
-                <strong class="aa-name">{{r.analyst}}</strong>
-                <span class="aa-row-controls">
+                <span class="aa-row-controls aa-row-controls-left">
                   <button class="btn btn-xs btn-default aa-move-btn"
                           ng-if="a.canManage"
                           title="Move to Working"
@@ -69,6 +68,7 @@
                     <i class="fa fa-arrow-left"></i>
                   </button>
                 </span>
+                <strong class="aa-name">{{r.analyst}}</strong>
               </li>
               <li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row">
                 <em>Empty</em>
