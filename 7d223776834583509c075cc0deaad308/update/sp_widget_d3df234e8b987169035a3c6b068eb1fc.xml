@@ -294,6 +294,11 @@
         var groupSysId = ar.getValue('assignment_group');
         if (!isAdmin &amp;&amp; (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
 
+        // Keep the roster in sync with current group membership so newly-
+        // added members appear immediately instead of after the next engine
+        // cycle (and so removed members get soft-deactivated promptly).
+        if (groupSysId) reconcileRosterFromGroup(assignerSysId, groupSysId);
+
         // Types that this specific group has actually had tickets assigned
         // to. Polymorphic query on `task` picks up every descendant including
         // custom ones like universal_task.
@@ -434,6 +439,50 @@
         if (!isManager) return false;
         var g = a.getValue('assignment_group');
         return !!g &amp;&amp; isUserInGroup(userSysId, g);
+    }
+
+    // Mirror of the engine's reconcile step so the widget never shows a
+    // stale roster. Adds rows for new group members and soft-deactivates
+    // rows for ex-members.
+    function reconcileRosterFromGroup(assignerSysId, groupSysId) {
+        var members = new GlideRecord('sys_user_grmember');
+        members.addQuery('group', groupSysId);
+        members.query();
+        var memberSet = {};
+        while (members.next()) {
+            var userSysId = members.getValue('user');
+            memberSet[userSysId] = true;
+
+            var existing = new GlideRecord(SCOPE + 'roster_entry');
+            existing.addQuery('assigner', assignerSysId);
+            existing.addQuery('analyst', userSysId);
+            existing.setLimit(1);
+            existing.query();
+            if (existing.next()) {
+                if (existing.active != true) {
+                    existing.active = true;
+                    existing.update();
+                }
+            } else {
+                var roster = new GlideRecord(SCOPE + 'roster_entry');
+                roster.initialize();
+                roster.assigner = assignerSysId;
+                roster.analyst = userSysId;
+                roster.active = true;
+                roster.working = false;
+                roster.insert();
+            }
+        }
+        var rosters = new GlideRecord(SCOPE + 'roster_entry');
+        rosters.addQuery('assigner', assignerSysId);
+        rosters.addQuery('active', true);
+        rosters.query();
+        while (rosters.next()) {
+            if (!memberSet[rosters.getValue('analyst')]) {
+                rosters.active = false;
+                rosters.update();
+            }
+        }
     }
 
     function getShifts(assignerSysId) {
