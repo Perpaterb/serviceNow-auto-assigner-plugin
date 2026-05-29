@@ -110,6 +110,7 @@
                        maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
                        ng-model="a.run_start_time"
                        ng-model-options="{updateOn: 'blur'}"
+                       ng-focus="c.captureRunTime(a, 'start')"
                        ng-change="c.setRunTime(a, 'start')"/>
               </label>
               <label>
@@ -118,13 +119,14 @@
                        maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
                        ng-model="a.run_end_time"
                        ng-model-options="{updateOn: 'blur'}"
+                       ng-focus="c.captureRunTime(a, 'end')"
                        ng-change="c.setRunTime(a, 'end')"/>
               </label>
               <label class="aa-check">
                 <input type="checkbox"
                        ng-model="a.stop_overnight"
                        ng-change="c.setBool(a, 'stop_overnight')"/>
-                Stop overnight (halt at end time)
+                Stop overnight — when end time hits, the assigner stops running and needs to be manually started again
               </label>
             </div>
           </div>

@@ -134,15 +134,38 @@
         c.server.update();
     };
 
+    c.captureRunTime = function(a, which) {
+        // Stash the value before the user starts editing so we can revert
+        // if they leave junk in the field.
+        var key = a.sys_id + ':' + which;
+        c._prevRunTime = c._prevRunTime || {};
+        c._prevRunTime[key] = which === 'start' ? a.run_start_time : a.run_end_time;
+    };
+
     c.setRunTime = function(a, which) {
         var s = which === 'start' ? a.run_start_time : a.run_end_time;
-        if (!/^\d{2}:\d{2}$/.test(s || '')) return; // require HH:MM
+        if (!isValidHhmm(s)) {
+            var key = a.sys_id + ':' + which;
+            var prev = (c._prevRunTime || {})[key];
+            if (prev !== undefined) {
+                if (which === 'start') a.run_start_time = prev;
+                else                   a.run_end_time   = prev;
+            }
+            return;
+        }
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
         c.data.value = s;
         c.server.update();
     };
+
+    function isValidHhmm(s) {
+        var m = ('' + (s || '')).match(/^(\d{2}):(\d{2})$/);
+        if (!m) return false;
+        var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+        return hh &gt;= 0 &amp;&amp; hh &lt;= 23 &amp;&amp; mm &gt;= 0 &amp;&amp; mm &lt;= 59;
+    }
 
     c.setBool = function(a, field) {
         c.data.action = 'setBool';
@@ -922,6 +945,7 @@
                        maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
                        ng-model="a.run_start_time"
                        ng-model-options="{updateOn: 'blur'}"
+                       ng-focus="c.captureRunTime(a, 'start')"
                        ng-change="c.setRunTime(a, 'start')"/&gt;
               &lt;/label&gt;
               &lt;label&gt;
@@ -930,13 +954,14 @@
                        maxlength="5" placeholder="HH:MM" pattern="\d{2}:\d{2}"
                        ng-model="a.run_end_time"
                        ng-model-options="{updateOn: 'blur'}"
+                       ng-focus="c.captureRunTime(a, 'end')"
                        ng-change="c.setRunTime(a, 'end')"/&gt;
               &lt;/label&gt;
               &lt;label class="aa-check"&gt;
                 &lt;input type="checkbox"
                        ng-model="a.stop_overnight"
                        ng-change="c.setBool(a, 'stop_overnight')"/&gt;
-                Stop overnight (halt at end time)
+                Stop overnight — when end time hits, the assigner stops running and needs to be manually started again
               &lt;/label&gt;
             &lt;/div&gt;
           &lt;/div&gt;

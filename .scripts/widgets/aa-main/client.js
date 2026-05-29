@@ -131,15 +131,38 @@ api.controller = function($scope, $interval) {
         c.server.update();
     };
 
+    c.captureRunTime = function(a, which) {
+        // Stash the value before the user starts editing so we can revert
+        // if they leave junk in the field.
+        var key = a.sys_id + ':' + which;
+        c._prevRunTime = c._prevRunTime || {};
+        c._prevRunTime[key] = which === 'start' ? a.run_start_time : a.run_end_time;
+    };
+
     c.setRunTime = function(a, which) {
         var s = which === 'start' ? a.run_start_time : a.run_end_time;
-        if (!/^\d{2}:\d{2}$/.test(s || '')) return; // require HH:MM
+        if (!isValidHhmm(s)) {
+            var key = a.sys_id + ':' + which;
+            var prev = (c._prevRunTime || {})[key];
+            if (prev !== undefined) {
+                if (which === 'start') a.run_start_time = prev;
+                else                   a.run_end_time   = prev;
+            }
+            return;
+        }
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
         c.data.value = s;
         c.server.update();
     };
+
+    function isValidHhmm(s) {
+        var m = ('' + (s || '')).match(/^(\d{2}):(\d{2})$/);
+        if (!m) return false;
+        var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+        return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+    }
 
     c.setBool = function(a, field) {
         c.data.action = 'setBool';

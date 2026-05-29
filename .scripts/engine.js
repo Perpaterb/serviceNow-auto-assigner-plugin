@@ -45,7 +45,13 @@
                 + ' stop_overnight=' + a.stop_overnight);
         if (startSec !== null && nowSec < startSec) { dbg(TAG + '   skip: before start'); return; }
         if (a.stop_overnight == true && endSec !== null && nowSec > endSec) {
-            dbg(TAG + '   skip: after end (stop_overnight)'); return;
+            // Per Q3: stop_overnight means the assigner auto-stops when its
+            // end time is reached and needs a manual Start to resume.
+            a.running = false;
+            a.last_run = now;
+            a.update();
+            gs.info(TAG + ' ' + a.name + ' auto-stopped (past end_time with stop_overnight)');
+            return;
         }
 
         var groupSysId = a.getValue('assignment_group');
