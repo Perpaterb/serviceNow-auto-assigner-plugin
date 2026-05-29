@@ -1,8 +1,11 @@
 (function() {
     var SCOPE = 'x_1578378_aa_';
+    // The role name uses a dot separator (x_1578378_aa.queue_manager), NOT the
+    // underscore table prefix in SCOPE — don't build it from SCOPE.
+    var MANAGER_ROLE = 'x_1578378_aa.queue_manager';
     var userSysId = gs.getUserID();
     var isAdmin   = gs.hasRole('admin');
-    var isManager = gs.hasRole(SCOPE + 'queue_manager');
+    var isManager = gs.hasRole(MANAGER_ROLE);
 
     // The scheduled job that runs the engine (see generate_engine.py).
     var ENGINE_JOB_SYS_ID = '4a6860f1fc1b9fe361220028cfb23965';
