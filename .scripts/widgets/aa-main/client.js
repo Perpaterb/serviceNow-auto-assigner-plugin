@@ -45,6 +45,29 @@ api.controller = function($scope, $interval) {
         var instanceMs = Date.now() + c.serverClockSkewMs;
         var d = new Date(instanceMs);
         c.instanceClockDisplay = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+
+        // Mirror the engine's gate so the badge tracks the same idea of
+        // "active window" the scheduler uses.
+        var nowSec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+        if (c.data && c.data.assigners) {
+            for (var i = 0; i < c.data.assigners.length; i++) {
+                c.data.assigners[i].inActiveWindow = isInActiveWindow(c.data.assigners[i], nowSec);
+            }
+        }
+    }
+
+    function hhmmToSec(s) {
+        var m = ('' + (s || '')).match(/^(\d{1,2}):(\d{2})/);
+        if (!m) return null;
+        return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
+    }
+
+    function isInActiveWindow(a, nowSec) {
+        var startSec = hhmmToSec(a.run_start_time);
+        var endSec   = hhmmToSec(a.run_end_time);
+        if (startSec !== null && nowSec < startSec) return false;
+        if (a.stop_overnight && endSec !== null && nowSec > endSec) return false;
+        return true;
     }
 
     function pad2(n) { return n < 10 ? '0' + n : '' + n; }

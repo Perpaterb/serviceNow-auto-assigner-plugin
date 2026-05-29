@@ -48,6 +48,29 @@
         var instanceMs = Date.now() + c.serverClockSkewMs;
         var d = new Date(instanceMs);
         c.instanceClockDisplay = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+
+        // Mirror the engine's gate so the badge tracks the same idea of
+        // "active window" the scheduler uses.
+        var nowSec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+        if (c.data &amp;&amp; c.data.assigners) {
+            for (var i = 0; i &lt; c.data.assigners.length; i++) {
+                c.data.assigners[i].inActiveWindow = isInActiveWindow(c.data.assigners[i], nowSec);
+            }
+        }
+    }
+
+    function hhmmToSec(s) {
+        var m = ('' + (s || '')).match(/^(\d{1,2}):(\d{2})/);
+        if (!m) return null;
+        return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
+    }
+
+    function isInActiveWindow(a, nowSec) {
+        var startSec = hhmmToSec(a.run_start_time);
+        var endSec   = hhmmToSec(a.run_end_time);
+        if (startSec !== null &amp;&amp; nowSec &lt; startSec) return false;
+        if (a.stop_overnight &amp;&amp; endSec !== null &amp;&amp; nowSec &gt; endSec) return false;
+        return true;
     }
 
     function pad2(n) { return n &lt; 10 ? '0' + n : '' + n; }
@@ -203,6 +226,10 @@
 .aa-running { color: #2e7d32; font-weight: 600; }
 .aa-stopped { color: #999; }
 .aa-status .fa { margin-right: 4px; }
+
+.aa-window-badge { font-weight: 600; }
+.aa-window-badge.aa-in-window { color: #2e7d32; }
+.aa-window-badge.aa-out-of-window { color: #b35900; }
 
 .aa-countdown {
     color: #555;
@@ -816,6 +843,13 @@
             &lt;span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}"&gt;
               &lt;i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"&gt;&lt;/i&gt;
               {{a.running ? 'Running' : 'Stopped'}}
+            &lt;/span&gt;
+            &lt;span class="aa-window-badge"
+                  ng-if="a.running"
+                  ng-class="{'aa-in-window': a.inActiveWindow, 'aa-out-of-window': !a.inActiveWindow}"
+                  title="Inside the active window means the engine will assign on its next cycle"&gt;
+              &lt;i class="fa" ng-class="{'fa-check-circle': a.inActiveWindow, 'fa-pause-circle-o': !a.inActiveWindow}"&gt;&lt;/i&gt;
+              {{a.inActiveWindow ? 'Active' : 'Not active'}}
             &lt;/span&gt;
             &lt;button class="btn btn-sm"
                     ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"

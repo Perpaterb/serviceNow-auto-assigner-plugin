@@ -32,6 +32,13 @@
               <i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"></i>
               {{a.running ? 'Running' : 'Stopped'}}
             </span>
+            <span class="aa-window-badge"
+                  ng-if="a.running"
+                  ng-class="{'aa-in-window': a.inActiveWindow, 'aa-out-of-window': !a.inActiveWindow}"
+                  title="Inside the active window means the engine will assign on its next cycle">
+              <i class="fa" ng-class="{'fa-check-circle': a.inActiveWindow, 'fa-pause-circle-o': !a.inActiveWindow}"></i>
+              {{a.inActiveWindow ? 'Active' : 'Not active'}}
+            </span>
             <button class="btn btn-sm"
                     ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"
                     ng-click="c.toggleRunning(a)"

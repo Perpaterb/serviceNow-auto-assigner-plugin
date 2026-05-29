@@ -41,6 +41,10 @@
 .aa-stopped { color: #999; }
 .aa-status .fa { margin-right: 4px; }
 
+.aa-window-badge { font-weight: 600; }
+.aa-window-badge.aa-in-window { color: #2e7d32; }
+.aa-window-badge.aa-out-of-window { color: #b35900; }
+
 .aa-countdown {
     color: #555;
     font-size: 13px;
