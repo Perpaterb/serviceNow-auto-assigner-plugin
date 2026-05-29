@@ -303,11 +303,69 @@
         return rows;
     }
 
-    // R6 — list of task types that *this group* has historically received
-    // tickets for. Uses GlideAggregate on the parent `task` table; the
-    // query is polymorphic, so every descendant (including custom ones
-    // like universal_task) appears via its sys_class_name.
+    // R6 — full list of `task` descendants on this instance, sorted with
+    // the common ITSM ones pinned to the top with friendly labels. Custom
+    // descendants (like an org-specific universal_task) appear below with
+    // their raw name.
+    //
+    // Walks sys_db_object via BFS over the super_class chain. If the
+    // cross-scope read fails (returns 0 descendants), we fall back to the
+    // group-history query so the list isn't empty.
+    var PINNED_ORDER = [
+        'incident', 'sc_req_item', 'sc_task', 'sc_request',
+        'change_request', 'change_task',
+        'problem', 'problem_task',
+        'hr_case', 'hr_task',
+        'sn_customerservice_case', 'sn_csm_task',
+        'vtb_task'
+    ];
+    var EXCLUDED = {
+        sysapproval_group:    1,
+        sysapproval_approver: 1,
+        sysapproval:          1,
+        sys_trigger:          1
+    };
+
+    function getAllTaskDescendants() {
+        var task = new GlideRecord('sys_db_object');
+        if (!task.get('name', 'task')) {
+            gs.warn('[aa-main] could not resolve `task` in sys_db_object — falling back');
+            return null;
+        }
+        var found = {};
+        var queue = [task.getUniqueValue()];
+        var loops = 0;
+        while (queue.length && loops++ < 5000) {
+            var parentSysId = queue.shift();
+            var children = new GlideRecord('sys_db_object');
+            children.addQuery('super_class', parentSysId);
+            children.query();
+            while (children.next()) {
+                var n = children.getValue('name');
+                if (!n || found[n]) continue;
+                found[n] = true;
+                queue.push(children.getUniqueValue());
+            }
+        }
+
+        var result = [];
+        for (var name in found) {
+            if (EXCLUDED[name]) continue;
+            if (name.indexOf(SCOPE) === 0) continue;
+            // Verify the table is still queryable with an assignment_group field.
+            var probe = new GlideRecord(name);
+            if (probe.isValidField && !probe.isValidField('assignment_group')) continue;
+            result.push({ name: name, label: TABLE_LABELS[name] || name });
+        }
+        result.sort(byPinnedThenAlpha);
+        return result;
+    }
+
     function getAssignableTypesForGroup(groupSysId) {
+        var all = getAllTaskDescendants();
+        if (all && all.length) return all;
+
+        // Fallback: empirical types historically routed to this group.
         if (!groupSysId) return [];
         var seen = {};
         var ag = new GlideAggregate('task');
@@ -319,12 +377,22 @@
         while (ag.next()) {
             var cls = ag.getValue('sys_class_name');
             if (!cls || cls === 'task' || seen[cls]) continue;
+            if (EXCLUDED[cls]) continue;
             if (cls.indexOf(SCOPE) === 0) continue;
             seen[cls] = true;
             result.push({ name: cls, label: TABLE_LABELS[cls] || cls });
         }
-        result.sort(function(a, b) { return ('' + a.label).localeCompare('' + b.label); });
+        result.sort(byPinnedThenAlpha);
         return result;
+    }
+
+    function byPinnedThenAlpha(a, b) {
+        var ai = PINNED_ORDER.indexOf(a.name);
+        var bi = PINNED_ORDER.indexOf(b.name);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return ('' + a.label).localeCompare('' + b.label);
     }
 
     function isUserInGroup(userSysId, groupSysId) {
