@@ -8,7 +8,7 @@ Produces:
   - sp_container                       — layout: one container per page
   - sp_row                             — one row in the container
   - sp_column                          — one column in the row
-  - sp_instance_v2                     — places aa-main inside the column
+  - sp_instance                     — places aa-main inside the column
 
 Source files read:
   .scripts/widgets/aa-main/template.html
@@ -65,7 +65,7 @@ PAGE_SYS_ID = sys_id(f"sp_page:{PAGE_ID}")
 CONTAINER_SYS_ID = sys_id(f"sp_container:{PAGE_ID}:1")
 ROW_SYS_ID = sys_id(f"sp_row:{PAGE_ID}:1")
 COLUMN_SYS_ID = sys_id(f"sp_column:{PAGE_ID}:1")
-INSTANCE_SYS_ID = sys_id(f"sp_instance_v2:{PAGE_ID}:{WIDGET_ID}")
+INSTANCE_SYS_ID = sys_id(f"sp_instance:{PAGE_ID}:{WIDGET_ID}")
 
 
 def render_widget() -> str:
@@ -188,8 +188,8 @@ def render_column() -> str:
 
 
 def render_instance() -> str:
-    return f"""<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance_v2">
-    <sp_instance_v2 action="INSERT_OR_UPDATE">
+    return f"""<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance">
+    <sp_instance action="INSERT_OR_UPDATE">
         <active>true</active>
         <bootstrap_alt>false</bootstrap_alt>
         <css_class/>
@@ -202,11 +202,11 @@ def render_instance() -> str:
         <short_description/>
         <sp_column display_value="">{COLUMN_SYS_ID}</sp_column>
         <sp_widget display_value="{WIDGET_NAME}">{WIDGET_SYS_ID}</sp_widget>
-        <sys_class_name>sp_instance_v2</sys_class_name>
-{audit_lines(INSTANCE_SYS_ID, f"sp_instance_v2_{INSTANCE_SYS_ID}")}        <sys_name>{WIDGET_NAME}</sys_name>
+        <sys_class_name>sp_instance</sys_class_name>
+{audit_lines(INSTANCE_SYS_ID, f"sp_instance_{INSTANCE_SYS_ID}")}        <sys_name>{WIDGET_NAME}</sys_name>
 {scope_lines()}        <title/>
         <widget_parameters/>
-    </sp_instance_v2>
+    </sp_instance>
 </record_update>
 """
 
@@ -221,7 +221,7 @@ def main():
         f"sp_container_{CONTAINER_SYS_ID}.xml": render_container(),
         f"sp_row_{ROW_SYS_ID}.xml":            render_row(),
         f"sp_column_{COLUMN_SYS_ID}.xml":      render_column(),
-        f"sp_instance_v2_{INSTANCE_SYS_ID}.xml": render_instance(),
+        f"sp_instance_{INSTANCE_SYS_ID}.xml": render_instance(),
     }
     for fname, content in files.items():
         out = update_dir / fname

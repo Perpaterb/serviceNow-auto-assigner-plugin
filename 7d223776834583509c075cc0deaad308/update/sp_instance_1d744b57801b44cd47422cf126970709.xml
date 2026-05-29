@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance_v2">
-    <sp_instance_v2 action="INSERT_OR_UPDATE">
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance">
+    <sp_instance action="INSERT_OR_UPDATE">
         <active>true</active>
         <bootstrap_alt>false</bootstrap_alt>
         <css_class/>
@@ -12,12 +12,12 @@
         <short_description/>
         <sp_column display_value="">c5e5192565c568ea2419662c4d84898f</sp_column>
         <sp_widget display_value="Auto-Assigner Main">d3df234e8b987169035a3c6b068eb1fc</sp_widget>
-        <sys_class_name>sp_instance_v2</sys_class_name>
+        <sys_class_name>sp_instance</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2026-05-29 04:00:00</sys_created_on>
-        <sys_id>b20a41aaadd89d859ec0659530db530c</sys_id>
+        <sys_id>1d744b57801b44cd47422cf126970709</sys_id>
         <sys_mod_count>0</sys_mod_count>
-        <sys_update_name>sp_instance_v2_b20a41aaadd89d859ec0659530db530c</sys_update_name>
+        <sys_update_name>sp_instance_1d744b57801b44cd47422cf126970709</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>
         <sys_updated_on>2026-05-29 04:00:00</sys_updated_on>
         <sys_name>Auto-Assigner Main</sys_name>
@@ -26,5 +26,5 @@
         <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
         <title/>
         <widget_parameters/>
-    </sp_instance_v2>
+    </sp_instance>
 </record_update>
