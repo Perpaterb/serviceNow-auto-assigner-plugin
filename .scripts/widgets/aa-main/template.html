@@ -12,7 +12,10 @@
         <div class="aa-header">
           <div>
             <h3>{{a.name}}</h3>
-            <div class="aa-meta">Group: {{a.assignment_group}}</div>
+            <div class="aa-group">
+              <i class="fa fa-users"></i>
+              Assignment group: <strong>{{a.assignment_group}}</strong>
+            </div>
           </div>
           <div class="aa-status">
             <span class="aa-countdown" ng-if="a.running && a.countdown" title="Time until the next engine cycle">

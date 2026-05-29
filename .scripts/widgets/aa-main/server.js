@@ -11,14 +11,17 @@
     data.isManager = isManager;
     data.assigners = [];
 
-    var availableTables = getTaskDescendantsWithGroup();
-
     var ar = new GlideRecord(SCOPE + 'assigner');
     ar.orderBy('name');
     ar.query();
     while (ar.next()) {
         var groupSysId = ar.getValue('assignment_group');
         if (!isAdmin && (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
+
+        // Types that this specific group has actually had tickets assigned
+        // to. Polymorphic query on `task` picks up every descendant including
+        // custom ones like universal_task.
+        var availableTables = getAssignableTypesForGroup(groupSysId);
 
         var assignerSysId = ar.getUniqueValue();
         // Diagnostic — what does the platform actually return for these fields?
@@ -201,6 +204,7 @@
             };
         }
         var rows = [];
+        var seen = {};
         for (var i = 0; i < available.length; i++) {
             var avail = available[i];
             var rec = existing[avail.name];
@@ -209,47 +213,66 @@
                 label:      avail.label,
                 enabled:    rec ? rec.enabled : false
             });
+            seen[avail.name] = true;
+        }
+        // Surface any previously-configured types that aren't in the curated
+        // list so the user can still see / remove them.
+        for (var name in existing) {
+            if (seen[name]) continue;
+            rows.push({
+                table_name: name,
+                label:      name,
+                enabled:    existing[name].enabled
+            });
         }
         return rows;
     }
 
-    // R6 — auto-derive the list of tables that have an assignment_group
-    // reference column. sys_dictionary is normally readable cross-scope
-    // (unlike sys_db_object), and any table that has an assignment_group
-    // ref column is, in practice, an ITSM/task descendant. Labels come
-    // from sys_documentation; fall back to the raw table name.
-    //
-    // Excludes our own tables and the abstract `task` table itself.
-    function getTaskDescendantsWithGroup() {
+    // R6 — list of task types that *this group* has historically received
+    // tickets for. Uses GlideAggregate on the parent `task` table; the
+    // query is polymorphic, so every descendant (including custom ones
+    // like universal_task) appears via its sys_class_name. Pretty labels
+    // for common ITSM tables; raw name for everything else.
+    var TABLE_LABELS = {
+        incident: 'Incident',
+        problem: 'Problem',
+        problem_task: 'Problem Task',
+        change_request: 'Change Request',
+        change_task: 'Change Task',
+        sc_request: 'Catalog Request',
+        sc_req_item: 'Catalog Item Request (RITM)',
+        sc_task: 'Catalog Task',
+        pm_project: 'Project',
+        pm_project_task: 'Project Task',
+        demand: 'Demand',
+        rm_story: 'Story',
+        rm_defect: 'Defect',
+        rm_enhancement: 'Enhancement',
+        hr_case: 'HR Case',
+        hr_task: 'HR Task',
+        sn_customerservice_case: 'Customer Service Case',
+        sn_csm_task: 'CSM Task',
+        vtb_task: 'Visual Task Board Task'
+    };
+
+    function getAssignableTypesForGroup(groupSysId) {
+        if (!groupSysId) return [];
         var seen = {};
-        var d = new GlideRecord('sys_dictionary');
-        d.addQuery('element', 'assignment_group');
-        d.addQuery('internal_type', 'reference');
-        d.addQuery('reference', 'sys_user_group');
-        d.query();
+        var ag = new GlideAggregate('task');
+        ag.addQuery('assignment_group', groupSysId);
+        ag.addAggregate('COUNT');
+        ag.groupBy('sys_class_name');
+        ag.query();
         var result = [];
-        while (d.next()) {
-            var name = d.getValue('name');
-            if (!name || seen[name]) continue;
-            if (name === 'task') continue;
-            if (name.indexOf(SCOPE) === 0) continue;
-            seen[name] = true;
-            result.push({ name: name, label: lookupTableLabel(name) });
+        while (ag.next()) {
+            var cls = ag.getValue('sys_class_name');
+            if (!cls || cls === 'task' || seen[cls]) continue;
+            if (cls.indexOf(SCOPE) === 0) continue;
+            seen[cls] = true;
+            result.push({ name: cls, label: TABLE_LABELS[cls] || cls });
         }
         result.sort(function(a, b) { return ('' + a.label).localeCompare('' + b.label); });
-        gs.info('[aa-main] ticket-type derive: ' + result.length + ' tables');
         return result;
-    }
-
-    function lookupTableLabel(tableName) {
-        var doc = new GlideRecord('sys_documentation');
-        doc.addQuery('name', tableName);
-        doc.addQuery('element', '');
-        doc.addQuery('language', 'en');
-        doc.setLimit(1);
-        doc.query();
-        if (doc.next()) return doc.getValue('label') || tableName;
-        return tableName;
     }
 
     function isUserInGroup(userSysId, groupSysId) {
