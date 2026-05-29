@@ -7,7 +7,15 @@ api.controller = function($scope, $interval) {
 
     // Tick the countdowns every second. Pure client-side — no server load.
     var tickHandle = $interval(updateCountdowns, 1000);
-    $scope.$on('$destroy', function() { $interval.cancel(tickHandle); });
+    // Background poll: re-fetch last_run timestamps so the countdown rolls
+    // over without forcing a page refresh. We only touch lastRunMs on the
+    // local model so any in-flight UI state (open dropdowns, etc.) is
+    // preserved.
+    var pollHandle = $interval(pollLastRun, 15000);
+    $scope.$on('$destroy', function() {
+        $interval.cancel(tickHandle);
+        $interval.cancel(pollHandle);
+    });
     updateCountdowns(); // first paint without waiting 1s
 
     function updateCountdowns() {
@@ -23,11 +31,27 @@ api.controller = function($scope, $interval) {
         if (!assigner.lastRunMs) return null;
         var elapsed = nowMs - assigner.lastRunMs;
         var remaining = CADENCE_MS - elapsed;
-        if (remaining <= 0) return 'due';
+        if (remaining <= 0) return 'any moment…';
         var secs = Math.floor(remaining / 1000);
         var m = Math.floor(secs / 60);
         var s = secs % 60;
         return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function pollLastRun() {
+        c.server.get({pollLastRun: true}).then(function(response) {
+            if (!response || !response.data || !response.data.assigners) return;
+            var fresh = {};
+            for (var i = 0; i < response.data.assigners.length; i++) {
+                fresh[response.data.assigners[i].sys_id] = response.data.assigners[i].lastRunMs;
+            }
+            for (var j = 0; j < c.data.assigners.length; j++) {
+                var local = c.data.assigners[j];
+                if (fresh.hasOwnProperty(local.sys_id)) {
+                    local.lastRunMs = fresh[local.sys_id];
+                }
+            }
+        });
     }
 
     c.toggleRunning = function(assigner) {

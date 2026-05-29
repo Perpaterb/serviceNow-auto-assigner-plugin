@@ -10,7 +10,15 @@
 
     // Tick the countdowns every second. Pure client-side — no server load.
     var tickHandle = $interval(updateCountdowns, 1000);
-    $scope.$on('$destroy', function() { $interval.cancel(tickHandle); });
+    // Background poll: re-fetch last_run timestamps so the countdown rolls
+    // over without forcing a page refresh. We only touch lastRunMs on the
+    // local model so any in-flight UI state (open dropdowns, etc.) is
+    // preserved.
+    var pollHandle = $interval(pollLastRun, 15000);
+    $scope.$on('$destroy', function() {
+        $interval.cancel(tickHandle);
+        $interval.cancel(pollHandle);
+    });
     updateCountdowns(); // first paint without waiting 1s
 
     function updateCountdowns() {
@@ -26,11 +34,27 @@
         if (!assigner.lastRunMs) return null;
         var elapsed = nowMs - assigner.lastRunMs;
         var remaining = CADENCE_MS - elapsed;
-        if (remaining &lt;= 0) return 'due';
+        if (remaining &lt;= 0) return 'any moment…';
         var secs = Math.floor(remaining / 1000);
         var m = Math.floor(secs / 60);
         var s = secs % 60;
         return m + ':' + (s &lt; 10 ? '0' : '') + s;
+    }
+
+    function pollLastRun() {
+        c.server.get({pollLastRun: true}).then(function(response) {
+            if (!response || !response.data || !response.data.assigners) return;
+            var fresh = {};
+            for (var i = 0; i &lt; response.data.assigners.length; i++) {
+                fresh[response.data.assigners[i].sys_id] = response.data.assigners[i].lastRunMs;
+            }
+            for (var j = 0; j &lt; c.data.assigners.length; j++) {
+                var local = c.data.assigners[j];
+                if (fresh.hasOwnProperty(local.sys_id)) {
+                    local.lastRunMs = fresh[local.sys_id];
+                }
+            }
+        });
     }
 
     c.toggleRunning = function(assigner) {
@@ -323,8 +347,9 @@
             &lt;div class="aa-meta"&gt;Group: {{a.assignment_group}}&lt;/div&gt;
           &lt;/div&gt;
           &lt;div class="aa-status"&gt;
-            &lt;span class="aa-countdown" ng-if="a.countdown" title="Time until next engine cycle"&gt;
-              &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt; {{a.countdown}}
+            &lt;span class="aa-countdown" ng-if="a.countdown" title="Time until the next engine cycle"&gt;
+              &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
+              Next run in {{a.countdown}}
             &lt;/span&gt;
             &lt;span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}"&gt;
               &lt;i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"&gt;&lt;/i&gt;
