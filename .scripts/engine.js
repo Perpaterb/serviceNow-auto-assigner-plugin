@@ -31,13 +31,17 @@
 
         var now = new GlideDateTime();
         var nowSec = secondsOfDay(now);
+        gs.info(TAG + ' >>> ' + a.name + ' (' + assignerSysId + ') nowSec=' + nowSec
+                + ' display="' + now.getDisplayValue() + '"');
 
         // 1. Time-window gate
         var startSec = timeFieldToSeconds(a.getValue('run_start_time'));
-        if (startSec !== null && nowSec < startSec) return;
-        if (a.stop_overnight == true) {
-            var endSec = timeFieldToSeconds(a.getValue('run_end_time'));
-            if (endSec !== null && nowSec > endSec) return;
+        var endSec   = timeFieldToSeconds(a.getValue('run_end_time'));
+        gs.info(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
+                + ' stop_overnight=' + a.stop_overnight);
+        if (startSec !== null && nowSec < startSec) { gs.info(TAG + '   skip: before start'); return; }
+        if (a.stop_overnight == true && endSec !== null && nowSec > endSec) {
+            gs.info(TAG + '   skip: after end (stop_overnight)'); return;
         }
 
         var groupSysId = a.getValue('assignment_group');
@@ -45,16 +49,19 @@
             gs.warn(TAG + ' assigner ' + a.name + ' has no assignment_group; skipping');
             return;
         }
+        gs.info(TAG + '   assignment_group=' + groupSysId);
 
         // 2. Reconcile roster against current group membership
         reconcileRoster(assignerSysId, groupSysId);
 
         // 3. Build eligible list (active, working, on-shift, not on break)
         var eligible = buildEligible(assignerSysId, nowSec);
+        gs.info(TAG + '   eligible=' + eligible.length);
 
         // 4 + 5. Distribute unassigned tickets round-robin
         if (eligible.length > 0) {
             var tickets = collectUnassignedTickets(assignerSysId, groupSysId);
+            gs.info(TAG + '   tickets=' + tickets.length);
             distribute(assignerSysId, eligible, tickets, now);
         }
 
@@ -140,14 +147,30 @@
         rosters.orderBy('sys_id');
         rosters.query();
         while (rosters.next()) {
+            var label = rosters.analyst.getDisplayValue() + ' (' + rosters.getValue('analyst') + ')';
             var shiftSysId = rosters.getValue('shift');
             var shift = new GlideRecord(SCOPE + 'shift');
-            if (!shift.get(shiftSysId)) continue;
+            if (!shift.get(shiftSysId)) {
+                gs.info(TAG + '   skip ' + label + ': shift not found ' + shiftSysId);
+                continue;
+            }
             var startSec = timeFieldToSeconds(shift.getValue('start_time'));
-            var endSec = timeFieldToSeconds(shift.getValue('end_time'));
-            if (startSec === null || endSec === null) continue;
-            if (nowSec < startSec || nowSec > endSec) continue;
-            if (isOnBreak(shiftSysId, nowSec)) continue;
+            var endSec   = timeFieldToSeconds(shift.getValue('end_time'));
+            gs.info(TAG + '   candidate ' + label + ' shift=' + shift.name
+                    + ' raw_start="' + shift.getValue('start_time') + '" raw_end="' + shift.getValue('end_time')
+                    + '" startSec=' + startSec + ' endSec=' + endSec);
+            if (startSec === null || endSec === null) {
+                gs.info(TAG + '   skip ' + label + ': could not parse shift times');
+                continue;
+            }
+            if (nowSec < startSec || nowSec > endSec) {
+                gs.info(TAG + '   skip ' + label + ': off-shift');
+                continue;
+            }
+            if (isOnBreak(shiftSysId, nowSec)) {
+                gs.info(TAG + '   skip ' + label + ': on break');
+                continue;
+            }
 
             eligible.push({
                 rosterSysId: rosters.getUniqueValue(),
@@ -176,9 +199,13 @@
         types.addQuery('assigner', assignerSysId);
         types.addQuery('enabled', true);
         types.query();
+        var typeCount = 0;
         var all = [];
         while (types.next()) {
-            var tableName = types.getValue('table_name');
+            typeCount++;
+            var tableName = '' + types.getValue('table_name');
+            tableName = tableName.replace(/^\s+|\s+$/g, ''); // trim whitespace
+            gs.info(TAG + '   ticket_type enabled: "' + tableName + '"');
             if (!tableName) continue;
             try {
                 var t = new GlideRecord(tableName);
@@ -186,17 +213,21 @@
                 t.addNullQuery('assigned_to');
                 t.orderBy('sys_created_on');
                 t.query();
+                var n = 0;
                 while (t.next()) {
+                    n++;
                     all.push({
                         tableName: tableName,
                         sysId: t.getUniqueValue(),
                         createdOn: t.getValue('sys_created_on')
                     });
                 }
+                gs.info(TAG + '   ' + tableName + ': ' + n + ' unassigned in group');
             } catch (e) {
                 gs.warn(TAG + ' could not query table ' + tableName + ': ' + e);
             }
         }
+        if (typeCount === 0) gs.info(TAG + '   no ticket_type_selection rows with enabled=true');
         // Global oldest-first across all enabled types (R9.6)
         all.sort(function (a, b) {
             return ('' + a.createdOn).localeCompare('' + b.createdOn);
