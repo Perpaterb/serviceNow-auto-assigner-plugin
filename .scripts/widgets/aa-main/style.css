@@ -1,4 +1,12 @@
-.aa-shell { padding: 16px 20px; }
+.aa-shell {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 20px 28px 24px;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
 .aa-shell h2 { margin-top: 0; }
 
 .aa-topbar {
