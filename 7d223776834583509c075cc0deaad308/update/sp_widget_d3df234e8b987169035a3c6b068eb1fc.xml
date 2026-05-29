@@ -13,6 +13,44 @@
             assigner.running = !assigner.running;
         });
     };
+
+    c.toggleWorking = function(assigner, entry) {
+        var willWork = !entry.working;
+        c.server.update({
+            action: 'setWorking',
+            rosterSysId: entry.sys_id,
+            working: willWork
+        }).then(function(response) {
+            entry.working = willWork;
+            // Re-sync this entry from the fresh server payload (server may have
+            // auto-applied last_shift / default shift when moving into Working).
+            var fresh = findRosterEntry(response.data, assigner.sys_id, entry.sys_id);
+            if (fresh) {
+                entry.shift = fresh.shift;
+                entry.shift_sys_id = fresh.shift_sys_id;
+            }
+        });
+    };
+
+    c.setShift = function(entry) {
+        c.server.update({
+            action: 'setShift',
+            rosterSysId: entry.sys_id,
+            shiftSysId: entry.shift_sys_id
+        });
+    };
+
+    function findRosterEntry(payload, assignerSysId, rosterSysId) {
+        if (!payload || !payload.assigners) return null;
+        for (var i = 0; i &lt; payload.assigners.length; i++) {
+            var a = payload.assigners[i];
+            if (a.sys_id !== assignerSysId) continue;
+            for (var j = 0; j &lt; a.roster.length; j++) {
+                if (a.roster[j].sys_id === rosterSysId) return a.roster[j];
+            }
+        }
+        return null;
+    }
 };
 </client_script>
         <controller_as>c</controller_as>
@@ -58,7 +96,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
+.aa-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aa-row-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.aa-shift-select { font-size: 12px; padding: 2px 6px; height: auto; min-width: 110px; max-width: 160px; }
+.aa-move-btn { padding: 2px 6px; }
 .aa-list li:last-child { border-bottom: 0; }
 .aa-empty-row { color: #999; }
 
@@ -89,17 +132,10 @@
     var isAdmin   = gs.hasRole('admin');
     var isManager = gs.hasRole(SCOPE + 'queue_manager');
 
-    // Handle Start/Stop toggle from the client.
-    if (input &amp;&amp; input.action === 'toggleRunning' &amp;&amp; input.assignerSysId) {
-        var a = new GlideRecord(SCOPE + 'assigner');
-        if (a.get(input.assignerSysId) &amp;&amp; canEditAssigner(a)) {
-            a.running = (a.running != true);
-            a.update();
-        }
-    }
+    handleInput();
 
-    data.user = gs.getUserDisplayName();
-    data.isAdmin = isAdmin;
+    data.user      = gs.getUserDisplayName();
+    data.isAdmin   = isAdmin;
     data.isManager = isManager;
     data.assigners = [];
 
@@ -108,8 +144,6 @@
     ar.query();
     while (ar.next()) {
         var groupSysId = ar.getValue('assignment_group');
-        // Admin sees everything regardless of group membership;
-        // everyone else must be in the assigner's group.
         if (!isAdmin &amp;&amp; (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
 
         data.assigners.push({
@@ -118,16 +152,81 @@
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
             canManage: canEditAssigner(ar),
+            shifts: getShifts(ar.getUniqueValue()),
             roster: getRoster(ar.getUniqueValue())
         });
     }
 
+    function handleInput() {
+        if (!input || !input.action) return;
+        switch (input.action) {
+            case 'toggleRunning':
+                var a = new GlideRecord(SCOPE + 'assigner');
+                if (a.get(input.assignerSysId) &amp;&amp; canEditAssigner(a)) {
+                    a.running = (a.running != true);
+                    a.update();
+                }
+                break;
+            case 'setWorking':
+                editRoster(input.rosterSysId, function(r) {
+                    var willWork = !!input.working;
+                    r.working = willWork;
+                    // R4.6 — when moving into Working without a shift selected,
+                    // prefer last_shift, else the assigner's Default shift.
+                    if (willWork &amp;&amp; !r.getValue('shift')) {
+                        var preferred = r.getValue('last_shift') || findDefaultShift(r.getValue('assigner'));
+                        if (preferred) r.shift = preferred;
+                    }
+                });
+                break;
+            case 'setShift':
+                editRoster(input.rosterSysId, function(r) {
+                    r.shift = input.shiftSysId || '';
+                    if (input.shiftSysId) r.last_shift = input.shiftSysId;
+                });
+                break;
+        }
+    }
+
+    function editRoster(rosterSysId, mutator) {
+        if (!rosterSysId) return;
+        var r = new GlideRecord(SCOPE + 'roster_entry');
+        if (!r.get(rosterSysId)) return;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        if (!a.get(r.getValue('assigner')) || !canEditAssigner(a)) return;
+        mutator(r);
+        r.update();
+    }
+
+    function findDefaultShift(assignerSysId) {
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.addQuery('assigner', assignerSysId);
+        s.addQuery('is_default', true);
+        s.setLimit(1);
+        s.query();
+        return s.next() ? s.getUniqueValue() : null;
+    }
+
     function canEditAssigner(a) {
-        // Admins can edit anything; queue_manager needs to also be in the group.
         if (isAdmin) return true;
         if (!isManager) return false;
         var g = a.getValue('assignment_group');
         return !!g &amp;&amp; isUserInGroup(userSysId, g);
+    }
+
+    function getShifts(assignerSysId) {
+        var shifts = [];
+        var s = new GlideRecord(SCOPE + 'shift');
+        s.addQuery('assigner', assignerSysId);
+        s.orderBy('name');
+        s.query();
+        while (s.next()) {
+            shifts.push({
+                sys_id: s.getUniqueValue(),
+                name: s.name + ''
+            });
+        }
+        return shifts;
     }
 
     function getRoster(assignerSysId) {
@@ -206,9 +305,24 @@
           &lt;div class="aa-list"&gt;
             &lt;h4&gt;Working ({{(a.roster | filter:{working:true}).length}})&lt;/h4&gt;
             &lt;ul&gt;
-              &lt;li ng-repeat="r in a.roster | filter:{working:true}"&gt;
-                &lt;strong&gt;{{r.analyst}}&lt;/strong&gt;
-                &lt;span class="aa-shift-pill"&gt;{{r.shift || 'No shift'}}&lt;/span&gt;
+              &lt;li ng-repeat="r in a.roster | filter:{working:true} track by r.sys_id"&gt;
+                &lt;strong class="aa-name"&gt;{{r.analyst}}&lt;/strong&gt;
+                &lt;span class="aa-row-controls"&gt;
+                  &lt;select class="aa-shift-select form-control"
+                          ng-if="a.canManage"
+                          ng-model="r.shift_sys_id"
+                          ng-change="c.setShift(r)"&gt;
+                    &lt;option value=""&gt;— no shift —&lt;/option&gt;
+                    &lt;option ng-repeat="s in a.shifts" value="{{s.sys_id}}"&gt;{{s.name}}&lt;/option&gt;
+                  &lt;/select&gt;
+                  &lt;span class="aa-shift-pill" ng-if="!a.canManage"&gt;{{r.shift || 'No shift'}}&lt;/span&gt;
+                  &lt;button class="btn btn-xs btn-default aa-move-btn"
+                          ng-if="a.canManage"
+                          title="Move to Not working"
+                          ng-click="c.toggleWorking(a, r)"&gt;
+                    &lt;i class="fa fa-arrow-right"&gt;&lt;/i&gt;
+                  &lt;/button&gt;
+                &lt;/span&gt;
               &lt;/li&gt;
               &lt;li ng-if="!(a.roster | filter:{working:true}).length" class="aa-empty-row"&gt;
                 &lt;em&gt;Nobody marked working&lt;/em&gt;
@@ -219,8 +333,16 @@
           &lt;div class="aa-list"&gt;
             &lt;h4&gt;Not working ({{(a.roster | filter:{working:false}).length}})&lt;/h4&gt;
             &lt;ul&gt;
-              &lt;li ng-repeat="r in a.roster | filter:{working:false}"&gt;
-                &lt;strong&gt;{{r.analyst}}&lt;/strong&gt;
+              &lt;li ng-repeat="r in a.roster | filter:{working:false} track by r.sys_id"&gt;
+                &lt;strong class="aa-name"&gt;{{r.analyst}}&lt;/strong&gt;
+                &lt;span class="aa-row-controls"&gt;
+                  &lt;button class="btn btn-xs btn-default aa-move-btn"
+                          ng-if="a.canManage"
+                          title="Move to Working"
+                          ng-click="c.toggleWorking(a, r)"&gt;
+                    &lt;i class="fa fa-arrow-left"&gt;&lt;/i&gt;
+                  &lt;/button&gt;
+                &lt;/span&gt;
               &lt;/li&gt;
               &lt;li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row"&gt;
                 &lt;em&gt;Empty&lt;/em&gt;

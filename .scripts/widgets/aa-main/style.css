@@ -40,7 +40,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
+.aa-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aa-row-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.aa-shift-select { font-size: 12px; padding: 2px 6px; height: auto; min-width: 110px; max-width: 160px; }
+.aa-move-btn { padding: 2px 6px; }
 .aa-list li:last-child { border-bottom: 0; }
 .aa-empty-row { color: #999; }
 

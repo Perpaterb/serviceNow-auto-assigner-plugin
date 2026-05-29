@@ -31,9 +31,24 @@
           <div class="aa-list">
             <h4>Working ({{(a.roster | filter:{working:true}).length}})</h4>
             <ul>
-              <li ng-repeat="r in a.roster | filter:{working:true}">
-                <strong>{{r.analyst}}</strong>
-                <span class="aa-shift-pill">{{r.shift || 'No shift'}}</span>
+              <li ng-repeat="r in a.roster | filter:{working:true} track by r.sys_id">
+                <strong class="aa-name">{{r.analyst}}</strong>
+                <span class="aa-row-controls">
+                  <select class="aa-shift-select form-control"
+                          ng-if="a.canManage"
+                          ng-model="r.shift_sys_id"
+                          ng-change="c.setShift(r)">
+                    <option value="">— no shift —</option>
+                    <option ng-repeat="s in a.shifts" value="{{s.sys_id}}">{{s.name}}</option>
+                  </select>
+                  <span class="aa-shift-pill" ng-if="!a.canManage">{{r.shift || 'No shift'}}</span>
+                  <button class="btn btn-xs btn-default aa-move-btn"
+                          ng-if="a.canManage"
+                          title="Move to Not working"
+                          ng-click="c.toggleWorking(a, r)">
+                    <i class="fa fa-arrow-right"></i>
+                  </button>
+                </span>
               </li>
               <li ng-if="!(a.roster | filter:{working:true}).length" class="aa-empty-row">
                 <em>Nobody marked working</em>
@@ -44,8 +59,16 @@
           <div class="aa-list">
             <h4>Not working ({{(a.roster | filter:{working:false}).length}})</h4>
             <ul>
-              <li ng-repeat="r in a.roster | filter:{working:false}">
-                <strong>{{r.analyst}}</strong>
+              <li ng-repeat="r in a.roster | filter:{working:false} track by r.sys_id">
+                <strong class="aa-name">{{r.analyst}}</strong>
+                <span class="aa-row-controls">
+                  <button class="btn btn-xs btn-default aa-move-btn"
+                          ng-if="a.canManage"
+                          title="Move to Working"
+                          ng-click="c.toggleWorking(a, r)">
+                    <i class="fa fa-arrow-left"></i>
+                  </button>
+                </span>
               </li>
               <li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row">
                 <em>Empty</em>
