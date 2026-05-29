@@ -63,10 +63,12 @@ api.controller = function($scope, $interval) {
     }
 
     function isInActiveWindow(a, nowSec) {
+        // Pure time-window check — independent of stop_overnight. The badge
+        // reflects "are we inside start..end?", not "would the engine halt?".
         var startSec = hhmmToSec(a.run_start_time);
         var endSec   = hhmmToSec(a.run_end_time);
         if (startSec !== null && nowSec < startSec) return false;
-        if (a.stop_overnight && endSec !== null && nowSec > endSec) return false;
+        if (endSec   !== null && nowSec > endSec)   return false;
         return true;
     }
 

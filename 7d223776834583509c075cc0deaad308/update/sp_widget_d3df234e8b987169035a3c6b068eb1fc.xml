@@ -66,10 +66,12 @@
     }
 
     function isInActiveWindow(a, nowSec) {
+        // Pure time-window check — independent of stop_overnight. The badge
+        // reflects "are we inside start..end?", not "would the engine halt?".
         var startSec = hhmmToSec(a.run_start_time);
         var endSec   = hhmmToSec(a.run_end_time);
         if (startSec !== null &amp;&amp; nowSec &lt; startSec) return false;
-        if (a.stop_overnight &amp;&amp; endSec !== null &amp;&amp; nowSec &gt; endSec) return false;
+        if (endSec   !== null &amp;&amp; nowSec &gt; endSec)   return false;
         return true;
     }
 
@@ -859,7 +861,7 @@
             &lt;/div&gt;
           &lt;/div&gt;
           &lt;div class="aa-status"&gt;
-            &lt;span class="aa-countdown" ng-if="a.running &amp;&amp; a.countdown" title="Time until the next engine cycle"&gt;
+            &lt;span class="aa-countdown" ng-if="a.running &amp;&amp; a.inActiveWindow &amp;&amp; a.countdown" title="Time until the next engine cycle"&gt;
               &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
               Next run in {{a.countdown}}
             &lt;/span&gt;
@@ -870,9 +872,9 @@
             &lt;span class="aa-window-badge"
                   ng-if="a.running"
                   ng-class="{'aa-in-window': a.inActiveWindow, 'aa-out-of-window': !a.inActiveWindow}"
-                  title="Inside the active window means the engine will assign on its next cycle"&gt;
+                  title="Whether the current instance time is inside the configured start/end window"&gt;
               &lt;i class="fa" ng-class="{'fa-check-circle': a.inActiveWindow, 'fa-pause-circle-o': !a.inActiveWindow}"&gt;&lt;/i&gt;
-              {{a.inActiveWindow ? 'Active' : 'Not active'}}
+              {{a.inActiveWindow ? 'Active window' : 'Outside active window'}}
             &lt;/span&gt;
             &lt;button class="btn btn-sm"
                     ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"
@@ -961,7 +963,7 @@
                 &lt;input type="checkbox"
                        ng-model="a.stop_overnight"
                        ng-change="c.setBool(a, 'stop_overnight')"/&gt;
-                Stop overnight — when end time hits, the assigner stops running and needs to be manually started again
+                Stop overnight (currently informational — engine always halts at end time)
               &lt;/label&gt;
             &lt;/div&gt;
           &lt;/div&gt;

@@ -43,16 +43,12 @@
         var endSec   = timeFieldToSeconds(a.run_end_time.getDisplayValue());
         dbg(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
                 + ' stop_overnight=' + a.stop_overnight);
+        // The active window is purely a per-cycle gate — outside it the
+        // cycle does nothing and tries again at the next scheduled tick.
+        // The engine NEVER flips `running` on its own; only a manager
+        // changes that.
         if (startSec !== null && nowSec < startSec) { dbg(TAG + '   skip: before start'); return; }
-        if (a.stop_overnight == true && endSec !== null && nowSec > endSec) {
-            // Per Q3: stop_overnight means the assigner auto-stops when its
-            // end time is reached and needs a manual Start to resume.
-            a.running = false;
-            a.last_run = now;
-            a.update();
-            gs.info(TAG + ' ' + a.name + ' auto-stopped (past end_time with stop_overnight)');
-            return;
-        }
+        if (endSec   !== null && nowSec > endSec)   { dbg(TAG + '   skip: past end');     return; }
 
         var groupSysId = a.getValue('assignment_group');
         if (!groupSysId) {
@@ -61,14 +57,22 @@
         }
         dbg(TAG + '   assignment_group=' + groupSysId);
 
-        // 2. Reconcile roster against current group membership
+        // 2. If no ticket types are enabled there is nothing to do.
+        if (!hasEnabledTicketTypes(assignerSysId)) {
+            dbg(TAG + '   skip: no ticket types enabled');
+            a.last_run = now;
+            a.update();
+            return;
+        }
+
+        // 3. Reconcile roster against current group membership
         reconcileRoster(assignerSysId, groupSysId);
 
-        // 3. Build eligible list (active, working, on-shift, not on break)
+        // 4. Build eligible list (active, working, on-shift, not on break)
         var eligible = buildEligible(assignerSysId, nowSec);
         dbg(TAG + '   eligible=' + eligible.length);
 
-        // 4 + 5. Distribute unassigned tickets round-robin
+        // 5 + 6. Distribute unassigned tickets round-robin
         if (eligible.length > 0) {
             var tickets = collectUnassignedTickets(assignerSysId, groupSysId);
             dbg(TAG + '   tickets=' + tickets.length);
@@ -102,6 +106,15 @@
         var m = ('' + displayStr).match(/(\d{2}):(\d{2}):(\d{2})/);
         if (!m) return null;
         return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+    }
+
+    function hasEnabledTicketTypes(assignerSysId) {
+        var t = new GlideRecord(SCOPE + 'ticket_type_selection');
+        t.addQuery('assigner', assignerSysId);
+        t.addQuery('enabled', true);
+        t.setLimit(1);
+        t.query();
+        return t.hasNext();
     }
 
     function reconcileRoster(assignerSysId, groupSysId) {
