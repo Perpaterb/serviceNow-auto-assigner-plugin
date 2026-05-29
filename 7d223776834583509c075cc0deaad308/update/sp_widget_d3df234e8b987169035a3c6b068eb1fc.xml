@@ -839,6 +839,10 @@
         log.addQuery('assigner', assignerSysId);
         log.addQuery('sys_created_on', '&gt;=', gs.beginningOfToday());
         log.orderByDesc('sys_created_on');
+        // Tie-break within a cycle: sys_created_on is only second-resolution,
+        // so a whole cycle's rows share one second. sequence restores the
+        // true assignment order within that second.
+        log.orderByDesc('sequence');
         log.setLimit(500);
         log.query();
         while (log.next()) {

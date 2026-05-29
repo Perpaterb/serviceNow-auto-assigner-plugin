@@ -83,6 +83,7 @@ independent.
 | ticket_ref | Document ID / reference | Link back to the record |
 | action | Choice | assigned / unassigned |
 | analyst | Reference → `sys_user` | Who it was assigned to / taken from |
+| sequence | Integer | Per-cycle counter; tie-breaks rows sharing one `sys_created_on` second so the log reads in true assignment order |
 | created | Date/Time | Standard sys_created_on is fine |
 
 > Auto-purge: a Scheduled Job (or table rotation / TPP) deletes entries older

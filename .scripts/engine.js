@@ -33,6 +33,13 @@
         var a = new GlideRecord(SCOPE + 'assigner');
         if (!a.get(assignerSysId)) return;
 
+        // Per-cycle, monotonically increasing counter stamped onto every
+        // activity_log row written during this cycle. The log's
+        // sys_created_on only has 1-second resolution, so a whole cycle's
+        // assignments tie on the same second and the true round-robin order
+        // is lost when sorting. seq is the tie-breaker that restores it.
+        var seq = { n: 0 };
+
         var now = new GlideDateTime();
         var nowSec = secondsOfDay(now);
         dbg(TAG + ' >>> ' + a.name + ' (' + assignerSysId + ') nowSec=' + nowSec
@@ -93,13 +100,13 @@
         if (eligible.length > 0) {
             var tickets = collectUnassignedTickets(assignerSysId, groupSysId);
             dbg(TAG + '   tickets=' + tickets.length);
-            distribute(assignerSysId, eligible, tickets, now);
+            distribute(assignerSysId, eligible, tickets, now, seq);
         }
 
         // 6. Reassign responded tickets from not-working analysts AFTER distribution
         // (freed tickets are picked up by the next cycle per R7.2 / Q5b)
         if (a.reassign_responded == true) {
-            reassignResponded(assignerSysId, groupSysId, a);
+            reassignResponded(assignerSysId, groupSysId, a, seq);
         }
 
         a.last_run = now;
@@ -276,7 +283,7 @@
         return all;
     }
 
-    function distribute(assignerSysId, eligible, tickets, now) {
+    function distribute(assignerSysId, eligible, tickets, now, seq) {
         // Use a moving clock that increments per assignment so each ticket
         // writes a distinct last_assigned_at. Without this every assignment
         // in one cycle gets the same timestamp and the next cycle's order
@@ -300,7 +307,7 @@
             }
 
             logActivity(assignerSysId, tickets[i].tableName, tr.getValue('number'),
-                        tr.getUniqueValue(), 'assigned', pick.analystSysId);
+                        tr.getUniqueValue(), 'assigned', pick.analystSysId, seq);
 
             // Round-robin: just-assigned analyst goes to the back of the line.
             eligible.push(pick);
@@ -308,7 +315,7 @@
         }
     }
 
-    function reassignResponded(assignerSysId, groupSysId, a) {
+    function reassignResponded(assignerSysId, groupSysId, a, seq) {
         // Build set of not-working analysts on this assigner
         var notWorking = {};
         var rr = new GlideRecord(SCOPE + 'roster_entry');
@@ -356,7 +363,7 @@
                     t.assigned_to = '';
                     t.update();
                     logActivity(assignerSysId, tableName, t.getValue('number'),
-                                t.getUniqueValue(), 'unassigned', assignedTo);
+                                t.getUniqueValue(), 'unassigned', assignedTo, seq);
                 }
             } catch (e) {
                 gs.warn(TAG + ' reassign scan failed for ' + tableName + ': ' + e);
@@ -364,7 +371,7 @@
         }
     }
 
-    function logActivity(assignerSysId, tableName, ticketNumber, ticketSysId, action, analystSysId) {
+    function logActivity(assignerSysId, tableName, ticketNumber, ticketSysId, action, analystSysId, seq) {
         var log = new GlideRecord(SCOPE + 'activity_log');
         log.initialize();
         log.assigner = assignerSysId;
@@ -373,6 +380,8 @@
         log.ticket_ref = ticketSysId;
         log.action = action;
         log.analyst = analystSysId;
+        // Monotonic within the cycle so same-second rows sort in true order.
+        log.sequence = seq ? seq.n++ : 0;
         log.insert();
     }
 })();

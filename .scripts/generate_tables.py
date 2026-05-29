@@ -141,6 +141,7 @@ TABLES = [
             ("ticket_ref", "Ticket reference", "string", 32, "", False),  # sys_id reference as string
             ("action", "Action", "string", 40, "", False),  # 'assigned' / 'unassigned'
             ("analyst", "Analyst", "reference", "sys_user", "", False),
+            ("sequence", "Sequence", "integer", 40, "0", False),  # per-cycle tie-breaker for display order
         ],
     },
 ]
@@ -331,6 +332,7 @@ def render_sys_dictionary_column(table: dict, column: tuple) -> str:
         "boolean":         ("True/False", "boolean"),
         "glide_time":      ("Time",       "glide_time"),
         "glide_date_time": ("Date/Time",  "glide_date_time"),
+        "integer":         ("Integer",    "integer"),
     }
     display_type, internal = type_map[ctype]
 
@@ -348,6 +350,9 @@ def render_sys_dictionary_column(table: dict, column: tuple) -> str:
         reference_attr = ""
     elif ctype == "glide_date_time":
         max_length = "40"
+        reference_attr = ""
+    elif ctype == "integer":
+        max_length = str(extra)
         reference_attr = ""
 
     col_sys_id = sys_id(f"sys_dictionary:{full_name}:{element}")
