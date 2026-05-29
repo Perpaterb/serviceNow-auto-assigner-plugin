@@ -10,8 +10,9 @@
     }
     c.activeTab = defaultTab();
     // Stable single-element slot the "New assigner" tab repeats over so it
-    // registers after the assigner tabs (see template comment).
-    c.newTabSlot = [1];
+    // registers after the assigner tabs (see template comment). Empty for
+    // read-only users (non-managers), so they never see the create tab.
+    c.newTabSlot = (c.data &amp;&amp; c.data.canCreate) ? [1] : [];
     // The ng-repeat tabs register a tick after the static "New assigner" tab,
     // so on first paint the tabset can latch onto that last tab. Re-assert the
     // intended tab once the repeated tabs exist.
@@ -898,6 +899,9 @@
     data.user             = gs.getUserDisplayName();
     data.isAdmin          = isAdmin;
     data.isManager        = isManager;
+    // Only admins and queue managers get the create flow and any edit
+    // affordances; everyone else (plain group members) gets a read-only view.
+    data.canCreate        = isAdmin || isManager;
     data.instanceNowDisplay = formatNowInSystemTz();
     data.availableGroups  = getAvailableGroups();
     // Absolute epoch-ms of the next scheduled engine fire. The countdown uses
@@ -1849,9 +1853,9 @@
               {{a.inActiveWindow ? 'Active window' : 'Outside active window'}}
             &lt;/span&gt;
             &lt;button class="btn btn-sm"
+                    ng-if="a.canManage"
                     ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"
-                    ng-click="c.toggleRunning(a)"
-                    ng-disabled="!a.canManage"&gt;
+                    ng-click="c.toggleRunning(a)"&gt;
               {{a.running ? 'Stop' : 'Start'}}
             &lt;/button&gt;
             &lt;button class="btn btn-sm btn-default aa-gear"
@@ -2126,29 +2130,30 @@
             &lt;/div&gt;
           &lt;/div&gt;
 
-          &lt;div class="aa-settings-section"&gt;
-            &lt;h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'act')"&gt;
-              &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'act'), 'fa-caret-right': !c.isExpanded(a, 'act')}"&gt;&lt;/i&gt;
-              Activity today ({{a.activityLog.length}})
-              &lt;small&gt;(assignments and unassignments since midnight)&lt;/small&gt;
-            &lt;/h4&gt;
-            &lt;div ng-if="c.isExpanded(a, 'act')"&gt;
-              &lt;p ng-if="!a.activityLog.length" class="aa-empty-row"&gt;
-                &lt;em&gt;No activity yet today.&lt;/em&gt;
-              &lt;/p&gt;
-              &lt;ul class="aa-activity-list" ng-if="a.activityLog.length"&gt;
-                &lt;li ng-repeat="e in a.activityLog track by e.sys_id"&gt;
-                  &lt;span class="aa-activity-time aa-mono"&gt;{{e.timestamp}}&lt;/span&gt;
-                  &lt;span class="aa-activity-action" ng-class="'aa-action-' + e.action"&gt;{{e.action}}&lt;/span&gt;
-                  &lt;strong&gt;{{e.number || '(no number)'}}&lt;/strong&gt;
-                  &lt;span class="aa-mono"&gt;{{e.table}}&lt;/span&gt;
-                  &lt;span class="aa-activity-arrow"&gt;{{e.action === 'assigned' ? '→' : '←'}}&lt;/span&gt;
-                  &lt;span&gt;{{e.analyst}}&lt;/span&gt;
-                &lt;/li&gt;
-              &lt;/ul&gt;
-            &lt;/div&gt;
-          &lt;/div&gt;
+        &lt;/div&gt;&lt;!-- /.aa-settings --&gt;
 
+        &lt;!-- Activity today: visible to everyone (read-only), not just managers. --&gt;
+        &lt;div class="aa-settings-section aa-activity-standalone"&gt;
+          &lt;h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'act')"&gt;
+            &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'act'), 'fa-caret-right': !c.isExpanded(a, 'act')}"&gt;&lt;/i&gt;
+            Activity today ({{a.activityLog.length}})
+            &lt;small&gt;(assignments and unassignments since midnight)&lt;/small&gt;
+          &lt;/h4&gt;
+          &lt;div ng-if="c.isExpanded(a, 'act')"&gt;
+            &lt;p ng-if="!a.activityLog.length" class="aa-empty-row"&gt;
+              &lt;em&gt;No activity yet today.&lt;/em&gt;
+            &lt;/p&gt;
+            &lt;ul class="aa-activity-list" ng-if="a.activityLog.length"&gt;
+              &lt;li ng-repeat="e in a.activityLog track by e.sys_id"&gt;
+                &lt;span class="aa-activity-time aa-mono"&gt;{{e.timestamp}}&lt;/span&gt;
+                &lt;span class="aa-activity-action" ng-class="'aa-action-' + e.action"&gt;{{e.action}}&lt;/span&gt;
+                &lt;strong&gt;{{e.number || '(no number)'}}&lt;/strong&gt;
+                &lt;span class="aa-mono"&gt;{{e.table}}&lt;/span&gt;
+                &lt;span class="aa-activity-arrow"&gt;{{e.action === 'assigned' ? '→' : '←'}}&lt;/span&gt;
+                &lt;span&gt;{{e.analyst}}&lt;/span&gt;
+              &lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/div&gt;
         &lt;/div&gt;
         &lt;/div&gt;&lt;!-- /.aa-dashboard --&gt;
 
@@ -2325,8 +2330,11 @@
     &lt;/uib-tab&gt;
   &lt;/uib-tabset&gt;
 
-  &lt;p ng-if="!data.assigners.length" class="aa-empty" style="margin-top: 16px;"&gt;
+  &lt;p ng-if="!data.assigners.length &amp;&amp; data.canCreate" class="aa-empty" style="margin-top: 16px;"&gt;
     No auto-assigners yet — use the &lt;strong&gt;+ New assigner&lt;/strong&gt; tab above to create one.
+  &lt;/p&gt;
+  &lt;p ng-if="!data.assigners.length &amp;&amp; !data.canCreate" class="aa-empty" style="margin-top: 16px;"&gt;
+    There are no auto-assigners to show for your groups.
   &lt;/p&gt;
 &lt;/div&gt;
 </template>

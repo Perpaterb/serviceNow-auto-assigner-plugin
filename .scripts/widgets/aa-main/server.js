@@ -58,6 +58,9 @@
     data.user             = gs.getUserDisplayName();
     data.isAdmin          = isAdmin;
     data.isManager        = isManager;
+    // Only admins and queue managers get the create flow and any edit
+    // affordances; everyone else (plain group members) gets a read-only view.
+    data.canCreate        = isAdmin || isManager;
     data.instanceNowDisplay = formatNowInSystemTz();
     data.availableGroups  = getAvailableGroups();
     // Absolute epoch-ms of the next scheduled engine fire. The countdown uses
