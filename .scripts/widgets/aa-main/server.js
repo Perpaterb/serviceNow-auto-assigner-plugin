@@ -140,9 +140,8 @@
                 break;
             case 'setRunTime':
                 editAssigner(input.assignerSysId, function(a) {
-                    var v = ('' + (input.value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-                    if (!v) return;
-                    var hhmmss = pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
+                    var hhmmss = toHhmmss(input.value);
+                    if (!hhmmss) return;
                     if (input.which === 'start')      a.run_start_time = hhmmss;
                     else if (input.which === 'end')   a.run_end_time   = hhmmss;
                 });
@@ -367,11 +366,15 @@
         return b;
     }
 
-    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if junk.
+    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if the
+    // value isn't a valid 24-hour time. "24:00(:00)" folds to "00:00:00".
     function toHhmmss(value) {
         var v = ('' + (value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
         if (!v) return null;
-        return pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
+        var hh = parseInt(v[1], 10), mm = parseInt(v[2], 10), ss = v[3] ? parseInt(v[3], 10) : 0;
+        if (hh === 24 && mm === 0 && ss === 0) hh = 0;
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59 || ss < 0 || ss > 59) return null;
+        return pad2(hh) + ':' + pad2(mm) + ':' + pad2(ss);
     }
 
     function editAssigner(sysId, mutator) {

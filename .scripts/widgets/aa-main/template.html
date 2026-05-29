@@ -371,12 +371,14 @@
                 <label>
                   Start
                   <input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"/>
+                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(s, 'start_time')" ng-blur="c.timeBlur(s, 'start_time')"/>
                 </label>
                 <label>
                   End
                   <input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"/>
+                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(s, 'end_time')" ng-blur="c.timeBlur(s, 'end_time')"/>
                 </label>
                 <span class="aa-shift-pill aa-default-pill" ng-if="s.is_default">Default</span>
                 <span class="aa-shift-actions" ng-if="!a.running">
@@ -396,10 +398,12 @@
                 <div class="aa-break-row" ng-repeat="b in s.breaks track by b.sys_id">
                   <span class="aa-break-label">Break</span>
                   <input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"/>
+                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(b, 'start_time')" ng-blur="c.timeBlur(b, 'start_time')"/>
                   <span>to</span>
                   <input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"/>
+                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(b, 'end_time')" ng-blur="c.timeBlur(b, 'end_time')"/>
                   <button class="btn btn-xs btn-primary" ng-if="!a.running" ng-click="c.saveBreak(a, s, b)">Save</button>
                   <button class="btn btn-xs btn-default" ng-if="!a.running" ng-click="c.deleteBreak(a, s, b)">Remove</button>
                 </div>
@@ -420,12 +424,16 @@
               <label>
                 Start
                 <input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"/>
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"
+                       ng-focus="c.timeFocus(c.draftShifts[a.sys_id], 'start')"
+                       ng-blur="c.timeBlur(c.draftShifts[a.sys_id], 'start')"/>
               </label>
               <label>
                 End
                 <input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"/>
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"
+                       ng-focus="c.timeFocus(c.draftShifts[a.sys_id], 'end')"
+                       ng-blur="c.timeBlur(c.draftShifts[a.sys_id], 'end')"/>
               </label>
               <button class="btn btn-sm btn-default"
                       ng-click="c.addShift(a)"

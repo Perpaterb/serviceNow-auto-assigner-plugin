@@ -126,6 +126,26 @@
         c.server.update();
     };
 
+    // Generic time-field handlers for shift / break / add-shift inputs.
+    // On focus we stash the current (known-good) value; on blur we normalize
+    // what the user typed to canonical HH:MM, or revert to the stashed value
+    // if it can't be parsed as a valid 24-hour time. These only clean the
+    // model — persistence happens via the Save / Add buttons.
+    c.timeFocus = function(obj, prop) {
+        if (obj) obj['$prev_' + prop] = obj[prop];
+    };
+
+    c.timeBlur = function(obj, prop) {
+        if (!obj) return;
+        var norm = normalizeTime(obj[prop]);
+        if (norm === null) {
+            var prev = obj['$prev_' + prop];
+            if (prev !== undefined &amp;&amp; prev !== null) obj[prop] = prev;
+        } else {
+            obj[prop] = norm;
+        }
+    };
+
     c.draftAssigner = { name: '', groupSysId: '' };
 
     c.createAssigner = function() {
@@ -296,9 +316,11 @@
     };
 
     c.setRunTime = function(a, which) {
-        var s = which === 'start' ? a.run_start_time : a.run_end_time;
-        if (!isValidHhmm(s)) {
-            var key = a.sys_id + ':' + which;
+        var raw  = which === 'start' ? a.run_start_time : a.run_end_time;
+        var norm = normalizeTime(raw);
+        if (norm === null) {
+            // Invalid — revert the field to what was there before the edit.
+            var key  = a.sys_id + ':' + which;
             var prev = (c._prevRunTime || {})[key];
             if (prev !== undefined) {
                 if (which === 'start') a.run_start_time = prev;
@@ -306,18 +328,41 @@
             }
             return;
         }
+        // Reflect the normalized value (e.g. "0930" -&gt; "09:30") back in the UI.
+        if (which === 'start') a.run_start_time = norm;
+        else                   a.run_end_time   = norm;
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
-        c.data.value = s;
+        c.data.value = norm;
         c.server.update();
     };
 
     function isValidHhmm(s) {
-        var m = ('' + (s || '')).match(/^(\d{2}):(\d{2})$/);
-        if (!m) return false;
-        var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
-        return hh &gt;= 0 &amp;&amp; hh &lt;= 23 &amp;&amp; mm &gt;= 0 &amp;&amp; mm &lt;= 59;
+        return normalizeTime(s) !== null;
+    }
+
+    // Coerce user input to a canonical 24-hour "HH:MM", or null if it can't be.
+    //   - "HHMM" (exactly 4 digits) -&gt; "HH:MM"   ("0930" -&gt; "09:30")
+    //   - "H:MM" / "HH:MM"          -&gt; zero-padded "HH:MM"
+    //   - "2400" / "24:00"          -&gt; "00:00"
+    //   - "2430", "223", anything else -&gt; null (invalid)
+    function normalizeTime(value) {
+        var s = ('' + (value == null ? '' : value)).replace(/\s+/g, '');
+        if (!s) return null;
+        var hh, mm;
+        var four  = s.match(/^(\d{2})(\d{2})$/);   // HHMM
+        var colon = s.match(/^(\d{1,2}):(\d{2})$/); // H:MM or HH:MM
+        if (four) {
+            hh = parseInt(four[1], 10);  mm = parseInt(four[2], 10);
+        } else if (colon) {
+            hh = parseInt(colon[1], 10); mm = parseInt(colon[2], 10);
+        } else {
+            return null;
+        }
+        if (hh === 24 &amp;&amp; mm === 0) hh = 0; // midnight written as 24:00
+        if (hh &lt; 0 || hh &gt; 23 || mm &lt; 0 || mm &gt; 59) return null;
+        return pad2(hh) + ':' + pad2(mm);
     }
 
     c.setBool = function(a, field) {
@@ -862,9 +907,8 @@
                 break;
             case 'setRunTime':
                 editAssigner(input.assignerSysId, function(a) {
-                    var v = ('' + (input.value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-                    if (!v) return;
-                    var hhmmss = pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
+                    var hhmmss = toHhmmss(input.value);
+                    if (!hhmmss) return;
                     if (input.which === 'start')      a.run_start_time = hhmmss;
                     else if (input.which === 'end')   a.run_end_time   = hhmmss;
                 });
@@ -1089,11 +1133,15 @@
         return b;
     }
 
-    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if junk.
+    // Normalize "H:MM" / "HH:MM" / "HH:MM:SS" to "HH:MM:SS", or null if the
+    // value isn't a valid 24-hour time. "24:00(:00)" folds to "00:00:00".
     function toHhmmss(value) {
         var v = ('' + (value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
         if (!v) return null;
-        return pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
+        var hh = parseInt(v[1], 10), mm = parseInt(v[2], 10), ss = v[3] ? parseInt(v[3], 10) : 0;
+        if (hh === 24 &amp;&amp; mm === 0 &amp;&amp; ss === 0) hh = 0;
+        if (hh &lt; 0 || hh &gt; 23 || mm &lt; 0 || mm &gt; 59 || ss &lt; 0 || ss &gt; 59) return null;
+        return pad2(hh) + ':' + pad2(mm) + ':' + pad2(ss);
     }
 
     function editAssigner(sysId, mutator) {
@@ -2001,12 +2049,14 @@
                 &lt;label&gt;
                   Start
                   &lt;input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"/&gt;
+                         maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(s, 'start_time')" ng-blur="c.timeBlur(s, 'start_time')"/&gt;
                 &lt;/label&gt;
                 &lt;label&gt;
                   End
                   &lt;input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"/&gt;
+                         maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(s, 'end_time')" ng-blur="c.timeBlur(s, 'end_time')"/&gt;
                 &lt;/label&gt;
                 &lt;span class="aa-shift-pill aa-default-pill" ng-if="s.is_default"&gt;Default&lt;/span&gt;
                 &lt;span class="aa-shift-actions" ng-if="!a.running"&gt;
@@ -2026,10 +2076,12 @@
                 &lt;div class="aa-break-row" ng-repeat="b in s.breaks track by b.sys_id"&gt;
                   &lt;span class="aa-break-label"&gt;Break&lt;/span&gt;
                   &lt;input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"/&gt;
+                         maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(b, 'start_time')" ng-blur="c.timeBlur(b, 'start_time')"/&gt;
                   &lt;span&gt;to&lt;/span&gt;
                   &lt;input type="text" class="form-control aa-time-input"
-                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"/&gt;
+                         maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(b, 'end_time')" ng-blur="c.timeBlur(b, 'end_time')"/&gt;
                   &lt;button class="btn btn-xs btn-primary" ng-if="!a.running" ng-click="c.saveBreak(a, s, b)"&gt;Save&lt;/button&gt;
                   &lt;button class="btn btn-xs btn-default" ng-if="!a.running" ng-click="c.deleteBreak(a, s, b)"&gt;Remove&lt;/button&gt;
                 &lt;/div&gt;
@@ -2050,12 +2102,16 @@
               &lt;label&gt;
                 Start
                 &lt;input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"/&gt;
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].start"
+                       ng-focus="c.timeFocus(c.draftShifts[a.sys_id], 'start')"
+                       ng-blur="c.timeBlur(c.draftShifts[a.sys_id], 'start')"/&gt;
               &lt;/label&gt;
               &lt;label&gt;
                 End
                 &lt;input type="text" class="form-control aa-time-input"
-                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"/&gt;
+                       maxlength="5" placeholder="HH:MM" ng-model="c.draftShifts[a.sys_id].end"
+                       ng-focus="c.timeFocus(c.draftShifts[a.sys_id], 'end')"
+                       ng-blur="c.timeBlur(c.draftShifts[a.sys_id], 'end')"/&gt;
               &lt;/label&gt;
               &lt;button class="btn btn-sm btn-default"
                       ng-click="c.addShift(a)"

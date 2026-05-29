@@ -123,6 +123,26 @@ api.controller = function($scope, $interval) {
         c.server.update();
     };
 
+    // Generic time-field handlers for shift / break / add-shift inputs.
+    // On focus we stash the current (known-good) value; on blur we normalize
+    // what the user typed to canonical HH:MM, or revert to the stashed value
+    // if it can't be parsed as a valid 24-hour time. These only clean the
+    // model — persistence happens via the Save / Add buttons.
+    c.timeFocus = function(obj, prop) {
+        if (obj) obj['$prev_' + prop] = obj[prop];
+    };
+
+    c.timeBlur = function(obj, prop) {
+        if (!obj) return;
+        var norm = normalizeTime(obj[prop]);
+        if (norm === null) {
+            var prev = obj['$prev_' + prop];
+            if (prev !== undefined && prev !== null) obj[prop] = prev;
+        } else {
+            obj[prop] = norm;
+        }
+    };
+
     c.draftAssigner = { name: '', groupSysId: '' };
 
     c.createAssigner = function() {
@@ -293,9 +313,11 @@ api.controller = function($scope, $interval) {
     };
 
     c.setRunTime = function(a, which) {
-        var s = which === 'start' ? a.run_start_time : a.run_end_time;
-        if (!isValidHhmm(s)) {
-            var key = a.sys_id + ':' + which;
+        var raw  = which === 'start' ? a.run_start_time : a.run_end_time;
+        var norm = normalizeTime(raw);
+        if (norm === null) {
+            // Invalid — revert the field to what was there before the edit.
+            var key  = a.sys_id + ':' + which;
             var prev = (c._prevRunTime || {})[key];
             if (prev !== undefined) {
                 if (which === 'start') a.run_start_time = prev;
@@ -303,18 +325,41 @@ api.controller = function($scope, $interval) {
             }
             return;
         }
+        // Reflect the normalized value (e.g. "0930" -> "09:30") back in the UI.
+        if (which === 'start') a.run_start_time = norm;
+        else                   a.run_end_time   = norm;
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
-        c.data.value = s;
+        c.data.value = norm;
         c.server.update();
     };
 
     function isValidHhmm(s) {
-        var m = ('' + (s || '')).match(/^(\d{2}):(\d{2})$/);
-        if (!m) return false;
-        var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
-        return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+        return normalizeTime(s) !== null;
+    }
+
+    // Coerce user input to a canonical 24-hour "HH:MM", or null if it can't be.
+    //   - "HHMM" (exactly 4 digits) -> "HH:MM"   ("0930" -> "09:30")
+    //   - "H:MM" / "HH:MM"          -> zero-padded "HH:MM"
+    //   - "2400" / "24:00"          -> "00:00"
+    //   - "2430", "223", anything else -> null (invalid)
+    function normalizeTime(value) {
+        var s = ('' + (value == null ? '' : value)).replace(/\s+/g, '');
+        if (!s) return null;
+        var hh, mm;
+        var four  = s.match(/^(\d{2})(\d{2})$/);   // HHMM
+        var colon = s.match(/^(\d{1,2}):(\d{2})$/); // H:MM or HH:MM
+        if (four) {
+            hh = parseInt(four[1], 10);  mm = parseInt(four[2], 10);
+        } else if (colon) {
+            hh = parseInt(colon[1], 10); mm = parseInt(colon[2], 10);
+        } else {
+            return null;
+        }
+        if (hh === 24 && mm === 0) hh = 0; // midnight written as 24:00
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+        return pad2(hh) + ':' + pad2(mm);
     }
 
     c.setBool = function(a, field) {
