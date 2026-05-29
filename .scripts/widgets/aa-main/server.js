@@ -21,6 +21,11 @@
         if (!isAdmin && (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
 
         var assignerSysId = ar.getUniqueValue();
+        // Diagnostic — what does the platform actually return for these fields?
+        gs.info('[aa-main] ' + ar.name + ' run_start raw="' + ar.getValue('run_start_time')
+                + '" display="' + ar.run_start_time.getDisplayValue() + '"'
+                + ' run_end raw="' + ar.getValue('run_end_time')
+                + '" display="' + ar.run_end_time.getDisplayValue() + '"');
         data.assigners.push({
             sys_id: assignerSysId,
             name: ar.name + '',
@@ -208,22 +213,43 @@
         return rows;
     }
 
-    // R6 — list of task descendants with an assignment_group field.
+    // R6 — auto-derive the list of tables that have an assignment_group
+    // reference column. sys_dictionary is normally readable cross-scope
+    // (unlike sys_db_object), and any table that has an assignment_group
+    // ref column is, in practice, an ITSM/task descendant. Labels come
+    // from sys_documentation; fall back to the raw table name.
     //
-    // The spec asks for an auto-derived list, but scoped apps can't read
-    // sys_db_object cross-scope without an explicit privilege grant. For
-    // v1 we hardcode the common ITSM descendants; a follow-up will add a
-    // sys_scope_privilege and switch back to derivation.
+    // Excludes our own tables and the abstract `task` table itself.
     function getTaskDescendantsWithGroup() {
-        return [
-            { name: 'incident',       label: 'Incident' },
-            { name: 'sc_request',     label: 'Catalog Request' },
-            { name: 'sc_req_item',    label: 'Catalog Item Request (RITM)' },
-            { name: 'sc_task',        label: 'Catalog Task' },
-            { name: 'change_request', label: 'Change Request' },
-            { name: 'change_task',    label: 'Change Task' },
-            { name: 'problem',        label: 'Problem' }
-        ];
+        var seen = {};
+        var d = new GlideRecord('sys_dictionary');
+        d.addQuery('element', 'assignment_group');
+        d.addQuery('internal_type', 'reference');
+        d.addQuery('reference', 'sys_user_group');
+        d.query();
+        var result = [];
+        while (d.next()) {
+            var name = d.getValue('name');
+            if (!name || seen[name]) continue;
+            if (name === 'task') continue;
+            if (name.indexOf(SCOPE) === 0) continue;
+            seen[name] = true;
+            result.push({ name: name, label: lookupTableLabel(name) });
+        }
+        result.sort(function(a, b) { return ('' + a.label).localeCompare('' + b.label); });
+        gs.info('[aa-main] ticket-type derive: ' + result.length + ' tables');
+        return result;
+    }
+
+    function lookupTableLabel(tableName) {
+        var doc = new GlideRecord('sys_documentation');
+        doc.addQuery('name', tableName);
+        doc.addQuery('element', '');
+        doc.addQuery('language', 'en');
+        doc.setLimit(1);
+        doc.query();
+        if (doc.next()) return doc.getValue('label') || tableName;
+        return tableName;
     }
 
     function isUserInGroup(userSysId, groupSysId) {
