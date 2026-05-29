@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_container">
+    <sp_container action="INSERT_OR_UPDATE">
+        <background_color/>
+        <background_image/>
+        <background_style/>
+        <bootstrap_alt>false</bootstrap_alt>
+        <container_fluid>false</container_fluid>
+        <css_class/>
+        <html_id/>
+        <move_id/>
+        <name>Main container</name>
+        <order>100</order>
+        <screen_size_xs>true</screen_size_xs>
+        <screen_size_sm>true</screen_size_sm>
+        <screen_size_md>true</screen_size_md>
+        <screen_size_lg>true</screen_size_lg>
+        <sp_page display_value="Auto-Assigner">09a9c99d6e0a1454c6004fb3aa0f9666</sp_page>
+        <subheader>false</subheader>
+        <sys_class_name>sp_container</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-29 04:00:00</sys_created_on>
+        <sys_id>c9e5e4b105ea985c66eb7af4195639f6</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_update_name>sp_container_c9e5e4b105ea985c66eb7af4195639f6</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-29 04:00:00</sys_updated_on>
+        <sys_name>Main container</sys_name>
+        <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+        <width/>
+    </sp_container>
+</record_update>

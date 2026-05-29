@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script>api.controller = function($scope) {
+    var c = this;
+    c.activeTab = 0;
+
+    c.toggleRunning = function(assigner) {
+        c.server.update({
+            action: 'toggleRunning',
+            assignerSysId: assigner.sys_id
+        }).then(function() {
+            assigner.running = !assigner.running;
+        });
+    };
+};
+</client_script>
+        <controller_as>c</controller_as>
+        <css>.aa-shell { padding: 16px 20px; }
+.aa-shell h2 { margin-top: 0; }
+.aa-empty { color: #888; font-style: italic; }
+
+.aa-assigner { padding: 16px 4px; }
+
+.aa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+.aa-header h3 { margin: 0; }
+.aa-meta { color: #666; font-size: 13px; margin-top: 2px; }
+
+.aa-status { display: flex; align-items: center; gap: 12px; }
+.aa-running { color: #2e7d32; font-weight: 600; }
+.aa-stopped { color: #999; }
+.aa-status .fa { margin-right: 4px; }
+
+.aa-rosters {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+}
+.aa-list {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 14px;
+    background: #fafafa;
+}
+.aa-list h4 { margin: 0 0 10px 0; font-size: 14px; color: #444; }
+.aa-list ul { list-style: none; padding: 0; margin: 0; }
+.aa-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.aa-list li:last-child { border-bottom: 0; }
+.aa-empty-row { color: #999; }
+
+.aa-shift-pill {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description>Manager UI for the Auto-Assigner: tabs of assigners, status, Start/Stop, roster lists.</description>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id>aa-main</id>
+        <internal>false</internal>
+        <link/>
+        <name>Auto-Assigner Main</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script>(function() {
+    var SCOPE = 'x_1578378_aa_';
+    var userSysId = gs.getUserID();
+
+    // Handle Start/Stop toggle from the client.
+    if (input &amp;&amp; input.action === 'toggleRunning' &amp;&amp; input.assignerSysId) {
+        var a = new GlideRecord(SCOPE + 'assigner');
+        if (a.get(input.assignerSysId) &amp;&amp; isUserInGroup(userSysId, a.getValue('assignment_group'))) {
+            a.running = (a.running != true);
+            a.update();
+        }
+    }
+
+    data.user = gs.getUserDisplayName();
+    data.isManager = gs.hasRole(SCOPE + 'queue_manager');
+    data.assigners = [];
+
+    var ar = new GlideRecord(SCOPE + 'assigner');
+    ar.orderBy('name');
+    ar.query();
+    while (ar.next()) {
+        var groupSysId = ar.getValue('assignment_group');
+        if (!groupSysId) continue;
+        if (!isUserInGroup(userSysId, groupSysId)) continue;
+
+        data.assigners.push({
+            sys_id: ar.getUniqueValue(),
+            name: ar.name + '',
+            assignment_group: ar.assignment_group.getDisplayValue(),
+            running: ar.running == true,
+            canManage: data.isManager,
+            roster: getRoster(ar.getUniqueValue())
+        });
+    }
+
+    function getRoster(assignerSysId) {
+        var roster = [];
+        var r = new GlideRecord(SCOPE + 'roster_entry');
+        r.addQuery('assigner', assignerSysId);
+        r.addQuery('active', true);
+        r.orderBy('analyst');
+        r.query();
+        while (r.next()) {
+            roster.push({
+                sys_id: r.getUniqueValue(),
+                analyst: r.analyst.getDisplayValue(),
+                analyst_sys_id: r.getValue('analyst'),
+                working: r.working == true,
+                shift: r.shift.getDisplayValue(),
+                shift_sys_id: r.getValue('shift')
+            });
+        }
+        return roster;
+    }
+
+    function isUserInGroup(userSysId, groupSysId) {
+        var m = new GlideRecord('sys_user_grmember');
+        m.addQuery('user', userSysId);
+        m.addQuery('group', groupSysId);
+        m.setLimit(1);
+        m.query();
+        return m.hasNext();
+    }
+})();
+</script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-29 04:00:00</sys_created_on>
+        <sys_id>d3df234e8b987169035a3c6b068eb1fc</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_update_name>sp_widget_d3df234e8b987169035a3c6b068eb1fc</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-29 04:00:00</sys_updated_on>
+        <sys_name>Auto-Assigner Main</sys_name>
+        <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+        <template>&lt;div class="aa-shell"&gt;
+  &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
+
+  &lt;p ng-if="!data.assigners.length" class="aa-empty"&gt;
+    No auto-assigners visible. You need to be in an assignment group that has one configured.
+  &lt;/p&gt;
+
+  &lt;uib-tabset ng-if="data.assigners.length" active="c.activeTab"&gt;
+    &lt;uib-tab ng-repeat="a in data.assigners" heading="{{a.name}}"&gt;
+      &lt;div class="aa-assigner"&gt;
+        &lt;div class="aa-header"&gt;
+          &lt;div&gt;
+            &lt;h3&gt;{{a.name}}&lt;/h3&gt;
+            &lt;div class="aa-meta"&gt;Group: {{a.assignment_group}}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class="aa-status"&gt;
+            &lt;span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}"&gt;
+              &lt;i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"&gt;&lt;/i&gt;
+              {{a.running ? 'Running' : 'Stopped'}}
+            &lt;/span&gt;
+            &lt;button class="btn btn-sm"
+                    ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"
+                    ng-click="c.toggleRunning(a)"
+                    ng-disabled="!a.canManage"&gt;
+              {{a.running ? 'Stop' : 'Start'}}
+            &lt;/button&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="aa-rosters"&gt;
+          &lt;div class="aa-list"&gt;
+            &lt;h4&gt;Working ({{(a.roster | filter:{working:true}).length}})&lt;/h4&gt;
+            &lt;ul&gt;
+              &lt;li ng-repeat="r in a.roster | filter:{working:true}"&gt;
+                &lt;strong&gt;{{r.analyst}}&lt;/strong&gt;
+                &lt;span class="aa-shift-pill"&gt;{{r.shift || 'No shift'}}&lt;/span&gt;
+              &lt;/li&gt;
+              &lt;li ng-if="!(a.roster | filter:{working:true}).length" class="aa-empty-row"&gt;
+                &lt;em&gt;Nobody marked working&lt;/em&gt;
+              &lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-list"&gt;
+            &lt;h4&gt;Not working ({{(a.roster | filter:{working:false}).length}})&lt;/h4&gt;
+            &lt;ul&gt;
+              &lt;li ng-repeat="r in a.roster | filter:{working:false}"&gt;
+                &lt;strong&gt;{{r.analyst}}&lt;/strong&gt;
+              &lt;/li&gt;
+              &lt;li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row"&gt;
+                &lt;em&gt;Empty&lt;/em&gt;
+              &lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/uib-tab&gt;
+  &lt;/uib-tabset&gt;
+&lt;/div&gt;
+</template>
+    </sp_widget>
+</record_update>

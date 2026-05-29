@@ -1,0 +1,59 @@
+<div class="aa-shell">
+  <h2>Auto-Assigner</h2>
+
+  <p ng-if="!data.assigners.length" class="aa-empty">
+    No auto-assigners visible. You need to be in an assignment group that has one configured.
+  </p>
+
+  <uib-tabset ng-if="data.assigners.length" active="c.activeTab">
+    <uib-tab ng-repeat="a in data.assigners" heading="{{a.name}}">
+      <div class="aa-assigner">
+        <div class="aa-header">
+          <div>
+            <h3>{{a.name}}</h3>
+            <div class="aa-meta">Group: {{a.assignment_group}}</div>
+          </div>
+          <div class="aa-status">
+            <span ng-class="{'aa-running': a.running, 'aa-stopped': !a.running}">
+              <i class="fa" ng-class="{'fa-circle': a.running, 'fa-circle-o': !a.running}"></i>
+              {{a.running ? 'Running' : 'Stopped'}}
+            </span>
+            <button class="btn btn-sm"
+                    ng-class="{'btn-default': a.running, 'btn-primary': !a.running}"
+                    ng-click="c.toggleRunning(a)"
+                    ng-disabled="!a.canManage">
+              {{a.running ? 'Stop' : 'Start'}}
+            </button>
+          </div>
+        </div>
+
+        <div class="aa-rosters">
+          <div class="aa-list">
+            <h4>Working ({{(a.roster | filter:{working:true}).length}})</h4>
+            <ul>
+              <li ng-repeat="r in a.roster | filter:{working:true}">
+                <strong>{{r.analyst}}</strong>
+                <span class="aa-shift-pill">{{r.shift || 'No shift'}}</span>
+              </li>
+              <li ng-if="!(a.roster | filter:{working:true}).length" class="aa-empty-row">
+                <em>Nobody marked working</em>
+              </li>
+            </ul>
+          </div>
+
+          <div class="aa-list">
+            <h4>Not working ({{(a.roster | filter:{working:false}).length}})</h4>
+            <ul>
+              <li ng-repeat="r in a.roster | filter:{working:false}">
+                <strong>{{r.analyst}}</strong>
+              </li>
+              <li ng-if="!(a.roster | filter:{working:false}).length" class="aa-empty-row">
+                <em>Empty</em>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </uib-tab>
+  </uib-tabset>
+</div>

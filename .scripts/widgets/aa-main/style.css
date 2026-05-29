@@ -1,0 +1,53 @@
+.aa-shell { padding: 16px 20px; }
+.aa-shell h2 { margin-top: 0; }
+.aa-empty { color: #888; font-style: italic; }
+
+.aa-assigner { padding: 16px 4px; }
+
+.aa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+.aa-header h3 { margin: 0; }
+.aa-meta { color: #666; font-size: 13px; margin-top: 2px; }
+
+.aa-status { display: flex; align-items: center; gap: 12px; }
+.aa-running { color: #2e7d32; font-weight: 600; }
+.aa-stopped { color: #999; }
+.aa-status .fa { margin-right: 4px; }
+
+.aa-rosters {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+}
+.aa-list {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 14px;
+    background: #fafafa;
+}
+.aa-list h4 { margin: 0 0 10px 0; font-size: 14px; color: #444; }
+.aa-list ul { list-style: none; padding: 0; margin: 0; }
+.aa-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.aa-list li:last-child { border-bottom: 0; }
+.aa-empty-row { color: #999; }
+
+.aa-shift-pill {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance_v2">
+    <sp_instance_v2 action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <bootstrap_alt>false</bootstrap_alt>
+        <css_class/>
+        <id/>
+        <order>100</order>
+        <screen_size_xs>true</screen_size_xs>
+        <screen_size_sm>true</screen_size_sm>
+        <screen_size_md>true</screen_size_md>
+        <screen_size_lg>true</screen_size_lg>
+        <short_description/>
+        <sp_column display_value="">c5e5192565c568ea2419662c4d84898f</sp_column>
+        <sp_widget display_value="Auto-Assigner Main">d3df234e8b987169035a3c6b068eb1fc</sp_widget>
+        <sys_class_name>sp_instance_v2</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-29 04:00:00</sys_created_on>
+        <sys_id>b20a41aaadd89d859ec0659530db530c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_update_name>sp_instance_v2_b20a41aaadd89d859ec0659530db530c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-29 04:00:00</sys_updated_on>
+        <sys_name>Auto-Assigner Main</sys_name>
+        <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+        <title/>
+        <widget_parameters/>
+    </sp_instance_v2>
+</record_update>
