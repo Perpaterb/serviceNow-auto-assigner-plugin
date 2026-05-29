@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element audit="true" db_object_id="add7969d2c2cf983d6b7b6e249bb2ae4" label="Reassign state selection" max_length="40" name="x_1578378_aa_reassign_state_selection" type="collection"/>
+</database>

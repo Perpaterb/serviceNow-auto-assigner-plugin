@@ -35,6 +35,7 @@ TABLES = [
     "roster_entry",
     "ticket_type_selection",
     "reassign_type_selection",
+    "reassign_state_selection",
     "activity_log",
 ]
 OPERATIONS = ["write", "create", "delete"]

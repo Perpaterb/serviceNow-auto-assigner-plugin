@@ -312,10 +312,19 @@
             notWorking[rr.getValue('analyst')] = true;
         }
 
-        var inProgress = a.reassign_state_in_progress == true;
-        var newSt      = a.reassign_state_new == true;
-        var ohToIp     = a.reassign_state_onhold_to_inprogress == true;
-        if (!inProgress && !newSt && !ohToIp) return;
+        // Enabled (table_name -> state_value -> true) from the new
+        // reassign_state_selection table.
+        var enabledStates = {};
+        var rs = new GlideRecord(SCOPE + 'reassign_state_selection');
+        rs.addQuery('assigner', assignerSysId);
+        rs.addQuery('enabled', true);
+        rs.query();
+        while (rs.next()) {
+            var tn = rs.getValue('table_name');
+            var sv = rs.getValue('state_value');
+            if (!enabledStates[tn]) enabledStates[tn] = {};
+            enabledStates[tn][sv] = true;
+        }
 
         var types = new GlideRecord(SCOPE + 'reassign_type_selection');
         types.addQuery('assigner', assignerSysId);
@@ -324,6 +333,8 @@
         while (types.next()) {
             var tableName = types.getValue('table_name');
             if (!tableName) continue;
+            var stateMap = enabledStates[tableName];
+            if (!stateMap) continue; // no states selected for this type → skip
             try {
                 var t = new GlideRecord(tableName);
                 t.addQuery('assignment_group', groupSysId);
@@ -332,27 +343,8 @@
                 while (t.next()) {
                     var assignedTo = t.getValue('assigned_to');
                     if (!notWorking[assignedTo]) continue;
-
-                    // State proxies — incident/task convention: 1=New, 2=In Progress, 3=On Hold.
-                    // (Per-table state mapping is a known config gap; see DATA_MODEL note for v2.)
                     var state = t.getValue('state');
-                    var matched = false;
-                    if (newSt && state == '1') matched = true;
-                    if (inProgress && state == '2') matched = true;
-                    if (ohToIp && state == '2') {
-                        // Most recent state transition was from On Hold (3) → In Progress (2)
-                        var aud = new GlideRecord('sys_audit');
-                        aud.addQuery('tablename', tableName);
-                        aud.addQuery('documentkey', t.getUniqueValue());
-                        aud.addQuery('fieldname', 'state');
-                        aud.orderByDesc('sys_created_on');
-                        aud.setLimit(1);
-                        aud.query();
-                        if (aud.next() && aud.getValue('oldvalue') == '3' && aud.getValue('newvalue') == '2') {
-                            matched = true;
-                        }
-                    }
-                    if (!matched) continue;
+                    if (!stateMap[state]) continue;
 
                     t.assigned_to = '';
                     t.update();

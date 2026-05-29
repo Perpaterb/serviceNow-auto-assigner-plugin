@@ -120,6 +120,17 @@ TABLES = [
         ],
     },
     {
+        "name": "reassign_state_selection",
+        "label": "Reassign state selection",
+        "plural": "Reassign state selections",
+        "columns": [
+            ("assigner",    "Assigner",    "reference", f"{SCOPE}_assigner", "", False),
+            ("table_name",  "Table name",  "string", 100, "", False),
+            ("state_value", "State value", "string", 40,  "", False),
+            ("enabled",     "Enabled",     "boolean", None, "false", False),
+        ],
+    },
+    {
         "name": "activity_log",
         "label": "Activity log",
         "plural": "Activity logs",

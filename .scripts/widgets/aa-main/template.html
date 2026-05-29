@@ -186,29 +186,7 @@
             </label>
 
             <div class="aa-reassign-body" ng-if="a.reassign_responded">
-              <p class="aa-help">A ticket assigned to a not-working analyst is unassigned when its current state matches <strong>any</strong> ticked box:</p>
-              <div class="aa-checkboxes aa-checkboxes-horiz">
-                <label class="aa-check">
-                  <input type="checkbox"
-                         ng-model="a.reassign_state_in_progress"
-                         ng-change="c.setBool(a, 'reassign_state_in_progress')"/>
-                  In Progress
-                </label>
-                <label class="aa-check">
-                  <input type="checkbox"
-                         ng-model="a.reassign_state_new"
-                         ng-change="c.setBool(a, 'reassign_state_new')"/>
-                  New
-                </label>
-                <label class="aa-check">
-                  <input type="checkbox"
-                         ng-model="a.reassign_state_onhold_to_inprogress"
-                         ng-change="c.setBool(a, 'reassign_state_onhold_to_inprogress')"/>
-                  On Hold → In Progress
-                </label>
-              </div>
-
-              <p class="aa-help" style="margin-top: 12px;">Apply to these ticket types:</p>
+              <p class="aa-help">Apply to these ticket types:</p>
               <div class="aa-rosters">
                 <div class="aa-list">
                   <h4>Active ({{(a.reassignTypes | filter:{enabled:true}).length}})</h4>
@@ -250,6 +228,49 @@
                   </p>
                 </div>
               </div>
+
+              <p class="aa-help" style="margin-top: 16px;">When a ticket is in one of these states (and assigned to a not-working analyst), unassign it:</p>
+              <p ng-if="!a.reassignStates.length" class="aa-empty-row">
+                <em>Add a ticket type above to see its possible states here.</em>
+              </p>
+              <div class="aa-rosters" ng-if="a.reassignStates.length">
+                <div class="aa-list">
+                  <h4>Active ({{(a.reassignStates | filter:{enabled:true}).length}})</h4>
+                  <ul>
+                    <li ng-repeat="s in a.reassignStates | filter:{enabled:true} track by s.table_name + '|' + s.state_value">
+                      <strong class="aa-name">{{s.label}}</strong>
+                      <span class="aa-row-controls">
+                        <span class="aa-mono">{{s.table_name}}</span>
+                        <button class="btn btn-xs btn-default aa-move-btn"
+                                title="Remove" ng-click="c.setReassignState(a, s, false)">
+                          <i class="fa fa-arrow-right"></i>
+                        </button>
+                      </span>
+                    </li>
+                    <li ng-if="!(a.reassignStates | filter:{enabled:true}).length" class="aa-empty-row">
+                      <em>No states active</em>
+                    </li>
+                  </ul>
+                </div>
+                <div class="aa-list">
+                  <h4>Available ({{(a.reassignStates | filter:{enabled:false} | filter:a.reassignStateFilter).length}})</h4>
+                  <input type="search" class="form-control aa-search"
+                         placeholder="Filter…" ng-model="a.reassignStateFilter"/>
+                  <ul class="aa-scroll">
+                    <li ng-repeat="s in a.reassignStates | filter:{enabled:false} | filter:a.reassignStateFilter | limitTo:200 track by s.table_name + '|' + s.state_value">
+                      <span class="aa-row-controls aa-row-controls-left">
+                        <button class="btn btn-xs btn-default aa-move-btn"
+                                title="Add" ng-click="c.setReassignState(a, s, true)">
+                          <i class="fa fa-arrow-left"></i>
+                        </button>
+                      </span>
+                      <strong class="aa-name">{{s.label}}</strong>
+                      <span class="aa-mono">{{s.table_name}}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

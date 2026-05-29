@@ -101,16 +101,15 @@
             run_start_time: hhmmFromTime(ar.run_start_time.getDisplayValue()),
             run_end_time:   hhmmFromTime(ar.run_end_time.getDisplayValue()),
             stop_overnight: ar.stop_overnight == true,
-            // R7 — reassign-responded master + eligibility flags
+            // R7 — reassign-responded master
             reassign_responded:                  ar.reassign_responded == true,
-            reassign_state_in_progress:          ar.reassign_state_in_progress == true,
-            reassign_state_new:                  ar.reassign_state_new == true,
-            reassign_state_onhold_to_inprogress: ar.reassign_state_onhold_to_inprogress == true,
             shifts: getShifts(assignerSysId),
             roster: getRoster(assignerSysId),
             // R6 — ticket types: enabled + available
             ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
-            reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables)
+            reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables),
+            // R7 — states derived from sys_choice for the enabled reassign types
+            reassignStates: getReassignStateRows(assignerSysId)
         });
     }
 
@@ -159,6 +158,10 @@
                 var typeTable = SCOPE + (input.action === 'toggleTicketType' ? 'ticket_type_selection' : 'reassign_type_selection');
                 if (!canEditAssignerById(input.assignerSysId)) break;
                 upsertType(typeTable, input.assignerSysId, input.tableName, !!input.enabled);
+                break;
+            case 'toggleReassignState':
+                if (!canEditAssignerById(input.assignerSysId)) break;
+                upsertReassignState(input.assignerSysId, input.tableName, input.stateValue, !!input.enabled);
                 break;
         }
     }
@@ -295,6 +298,80 @@
             });
         }
         return roster;
+    }
+
+    function upsertReassignState(assignerSysId, tableName, stateValue, enabled) {
+        if (!tableName || !stateValue) return;
+        var s = new GlideRecord(SCOPE + 'reassign_state_selection');
+        s.addQuery('assigner', assignerSysId);
+        s.addQuery('table_name', tableName);
+        s.addQuery('state_value', stateValue);
+        s.setLimit(1);
+        s.query();
+        if (s.next()) {
+            s.enabled = enabled;
+            s.update();
+        } else {
+            s.initialize();
+            s.assigner    = assignerSysId;
+            s.table_name  = tableName;
+            s.state_value = stateValue;
+            s.enabled     = enabled;
+            s.insert();
+        }
+    }
+
+    // R7 — state list for the reassign-responded section. Derived from
+    // sys_choice on the `state` field of every currently-enabled reassign
+    // type. Each row is (table_name, state_value, label, enabled).
+    function getReassignStateRows(assignerSysId) {
+        // Currently-enabled reassign types
+        var enabledTypes = [];
+        var rt = new GlideRecord(SCOPE + 'reassign_type_selection');
+        rt.addQuery('assigner', assignerSysId);
+        rt.addQuery('enabled', true);
+        rt.query();
+        while (rt.next()) enabledTypes.push(rt.getValue('table_name'));
+
+        // Existing state-selection rows for this assigner (by table+value)
+        var existing = {};
+        var es = new GlideRecord(SCOPE + 'reassign_state_selection');
+        es.addQuery('assigner', assignerSysId);
+        es.query();
+        while (es.next()) {
+            existing[es.getValue('table_name') + '|' + es.getValue('state_value')] = es.enabled == true;
+        }
+
+        // Available states from sys_choice for each enabled type
+        var rows = [];
+        var seen = {};
+        for (var i = 0; i < enabledTypes.length; i++) {
+            var tableName = enabledTypes[i];
+            try {
+                var ch = new GlideRecord('sys_choice');
+                ch.addQuery('name', tableName);
+                ch.addQuery('element', 'state');
+                ch.addQuery('inactive', false);
+                ch.orderBy('sequence');
+                ch.orderBy('value');
+                ch.query();
+                while (ch.next()) {
+                    var value = ch.getValue('value');
+                    var key   = tableName + '|' + value;
+                    if (!value || seen[key]) continue;
+                    seen[key] = true;
+                    rows.push({
+                        table_name: tableName,
+                        state_value: value,
+                        label: ch.getValue('label') || value,
+                        enabled: existing[key] === true
+                    });
+                }
+            } catch (e) {
+                gs.warn('[aa-main] sys_choice lookup failed for ' + tableName + ': ' + e);
+            }
+        }
+        return rows;
     }
 
     function getTypeRows(assignerSysId, typeTable, available) {

@@ -198,6 +198,16 @@ api.controller = function($scope, $interval) {
         c.server.update();
     };
 
+    c.setReassignState = function(a, s, enabled) {
+        s.enabled = enabled;
+        c.data.action = 'toggleReassignState';
+        c.data.assignerSysId = a.sys_id;
+        c.data.tableName = s.table_name;
+        c.data.stateValue = s.state_value;
+        c.data.enabled = enabled;
+        c.server.update();
+    };
+
     function findRosterEntry(payload, assignerSysId, rosterSysId) {
         if (!payload || !payload.assigners) return null;
         for (var i = 0; i < payload.assigners.length; i++) {
