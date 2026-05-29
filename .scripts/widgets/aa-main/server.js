@@ -1,3 +1,6 @@
+// Diagnostic — see what input looks like when c.server.update() fires.
+gs.info('[aa-main] input typeof=' + (typeof input) + ' value=' + JSON.stringify(input));
+
 (function() {
     var SCOPE = 'x_1578378_aa_';
     var userSysId = gs.getUserID();
