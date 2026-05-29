@@ -8,6 +8,7 @@
   <uib-tabset ng-if="data.assigners.length" active="c.activeTab">
     <uib-tab ng-repeat="a in data.assigners" heading="{{a.name}}">
       <div class="aa-assigner">
+
         <div class="aa-header">
           <div>
             <h3>{{a.name}}</h3>
@@ -80,6 +81,91 @@
             </ul>
           </div>
         </div>
+
+        <div class="aa-settings" ng-if="a.canManage">
+
+          <div class="aa-settings-section">
+            <h4>Run window</h4>
+            <div class="aa-run-row">
+              <label>
+                Start
+                <input type="time" class="form-control aa-time-input"
+                       ng-model="a.run_start_time"
+                       ng-change="c.setRunTime(a, 'start')"/>
+              </label>
+              <label>
+                End
+                <input type="time" class="form-control aa-time-input"
+                       ng-model="a.run_end_time"
+                       ng-change="c.setRunTime(a, 'end')"/>
+              </label>
+              <label class="aa-check">
+                <input type="checkbox"
+                       ng-model="a.stop_overnight"
+                       ng-change="c.setBool(a, 'stop_overnight')"/>
+                Stop overnight (halt at end time)
+              </label>
+            </div>
+          </div>
+
+          <div class="aa-settings-section">
+            <h4>Ticket types <small>(picks up unassigned tickets of these types)</small></h4>
+            <p ng-if="!a.ticketTypes.length" class="aa-empty-row"><em>No `task` descendants with an assignment_group field found.</em></p>
+            <div class="aa-checkboxes">
+              <label ng-repeat="t in a.ticketTypes" class="aa-check">
+                <input type="checkbox"
+                       ng-model="t.enabled"
+                       ng-change="c.toggleTicketType(a, t)"/>
+                {{t.label}} <span class="aa-mono">({{t.table_name}})</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="aa-settings-section">
+            <h4>Unassign from not-working analysts</h4>
+            <label class="aa-check aa-master">
+              <input type="checkbox"
+                     ng-model="a.reassign_responded"
+                     ng-change="c.setBool(a, 'reassign_responded')"/>
+              Enable
+            </label>
+
+            <div class="aa-reassign-body" ng-if="a.reassign_responded">
+              <p class="aa-help">A ticket assigned to a not-working analyst is unassigned when its current state matches <strong>any</strong> ticked box:</p>
+              <div class="aa-checkboxes aa-checkboxes-horiz">
+                <label class="aa-check">
+                  <input type="checkbox"
+                         ng-model="a.reassign_state_in_progress"
+                         ng-change="c.setBool(a, 'reassign_state_in_progress')"/>
+                  In Progress
+                </label>
+                <label class="aa-check">
+                  <input type="checkbox"
+                         ng-model="a.reassign_state_new"
+                         ng-change="c.setBool(a, 'reassign_state_new')"/>
+                  New
+                </label>
+                <label class="aa-check">
+                  <input type="checkbox"
+                         ng-model="a.reassign_state_onhold_to_inprogress"
+                         ng-change="c.setBool(a, 'reassign_state_onhold_to_inprogress')"/>
+                  On Hold → In Progress
+                </label>
+              </div>
+
+              <p class="aa-help" style="margin-top: 12px;">Apply to these ticket types:</p>
+              <div class="aa-checkboxes">
+                <label ng-repeat="t in a.reassignTypes" class="aa-check">
+                  <input type="checkbox"
+                         ng-model="t.enabled"
+                         ng-change="c.toggleReassignType(a, t)"/>
+                  {{t.label}} <span class="aa-mono">({{t.table_name}})</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </uib-tab>
   </uib-tabset>

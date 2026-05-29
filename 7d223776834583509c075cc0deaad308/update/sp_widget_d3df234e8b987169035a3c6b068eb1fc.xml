@@ -5,21 +5,15 @@
     var c = this;
     c.activeTab = 0;
 
-    // Engine cadence is 5 minutes (sysauto_script.run_period).
     var CADENCE_MS = 5 * 60 * 1000;
 
-    // Tick the countdowns every second. Pure client-side — no server load.
     var tickHandle = $interval(updateCountdowns, 1000);
-    // Background poll: re-fetch last_run timestamps so the countdown rolls
-    // over without forcing a page refresh. We only touch lastRunMs on the
-    // local model so any in-flight UI state (open dropdowns, etc.) is
-    // preserved.
     var pollHandle = $interval(pollLastRun, 15000);
     $scope.$on('$destroy', function() {
         $interval.cancel(tickHandle);
         $interval.cancel(pollHandle);
     });
-    updateCountdowns(); // first paint without waiting 1s
+    updateCountdowns();
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -42,7 +36,7 @@
     }
 
     function pollLastRun() {
-        c.server.get({pollLastRun: true}).then(function(response) {
+        c.server.get({ pollLastRun: true }).then(function(response) {
             if (!response || !response.data || !response.data.assigners) return;
             var fresh = {};
             for (var i = 0; i &lt; response.data.assigners.length; i++) {
@@ -50,29 +44,27 @@
             }
             for (var j = 0; j &lt; c.data.assigners.length; j++) {
                 var local = c.data.assigners[j];
-                if (fresh.hasOwnProperty(local.sys_id)) {
-                    local.lastRunMs = fresh[local.sys_id];
-                }
+                if (fresh.hasOwnProperty(local.sys_id)) local.lastRunMs = fresh[local.sys_id];
             }
         });
     }
 
-    c.toggleRunning = function(assigner) {
+    // ---- actions ----------------------------------------------------------
+
+    c.toggleRunning = function(a) {
         c.data.action = 'toggleRunning';
-        c.data.assignerSysId = assigner.sys_id;
-        c.server.update().then(function() {
-            assigner.running = !assigner.running;
-        });
+        c.data.assignerSysId = a.sys_id;
+        c.server.update().then(function() { a.running = !a.running; });
     };
 
-    c.toggleWorking = function(assigner, entry) {
+    c.toggleWorking = function(a, entry) {
         var willWork = !entry.working;
         c.data.action = 'setWorking';
         c.data.rosterSysId = entry.sys_id;
         c.data.working = willWork;
         c.server.update().then(function(response) {
             entry.working = willWork;
-            var fresh = findRosterEntry(response.data, assigner.sys_id, entry.sys_id);
+            var fresh = findRosterEntry(response.data, a.sys_id, entry.sys_id);
             if (fresh) {
                 entry.shift = fresh.shift;
                 entry.shift_sys_id = fresh.shift_sys_id;
@@ -84,6 +76,38 @@
         c.data.action = 'setShift';
         c.data.rosterSysId = entry.sys_id;
         c.data.shiftSysId = entry.shift_sys_id;
+        c.server.update();
+    };
+
+    c.setRunTime = function(a, which) {
+        c.data.action = 'setRunTime';
+        c.data.assignerSysId = a.sys_id;
+        c.data.which = which;
+        c.data.value = which === 'start' ? a.run_start_time : a.run_end_time;
+        c.server.update();
+    };
+
+    c.setBool = function(a, field) {
+        c.data.action = 'setBool';
+        c.data.assignerSysId = a.sys_id;
+        c.data.field = field;
+        c.data.value = !!a[field];
+        c.server.update();
+    };
+
+    c.toggleTicketType = function(a, t) {
+        c.data.action = 'toggleTicketType';
+        c.data.assignerSysId = a.sys_id;
+        c.data.tableName = t.table_name;
+        c.data.enabled = !!t.enabled;
+        c.server.update();
+    };
+
+    c.toggleReassignType = function(a, t) {
+        c.data.action = 'toggleReassignType';
+        c.data.assignerSysId = a.sys_id;
+        c.data.tableName = t.table_name;
+        c.data.enabled = !!t.enabled;
         c.server.update();
     };
 
@@ -168,6 +192,63 @@
     border-radius: 10px;
     font-size: 12px;
 }
+
+.aa-settings { margin-top: 24px; }
+.aa-settings-section {
+    border-top: 1px solid #eee;
+    padding: 14px 0 8px 0;
+}
+.aa-settings-section h4 { margin: 0 0 10px 0; font-size: 14px; }
+.aa-settings-section h4 small { font-weight: normal; color: #888; }
+
+.aa-run-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.aa-run-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+}
+.aa-time-input {
+    width: 120px;
+    margin-top: 2px;
+}
+
+.aa-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+    margin: 0;
+    cursor: pointer;
+}
+.aa-check input[type="checkbox"] { margin: 0; }
+.aa-check.aa-master { font-weight: 600; }
+
+.aa-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.aa-checkboxes-horiz {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.aa-reassign-body {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 3px solid #e3f2fd;
+}
+
+.aa-mono { font-family: monospace; color: #888; font-size: 12px; }
+.aa-help { font-size: 13px; color: #666; margin: 6px 0; }
 </css>
         <data_table>sp_instance</data_table>
         <demo_data/>
@@ -195,6 +276,8 @@
     data.isManager = isManager;
     data.assigners = [];
 
+    var availableTables = getTaskDescendantsWithGroup();
+
     var ar = new GlideRecord(SCOPE + 'assigner');
     ar.orderBy('name');
     ar.query();
@@ -202,17 +285,28 @@
         var groupSysId = ar.getValue('assignment_group');
         if (!isAdmin &amp;&amp; (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
 
+        var assignerSysId = ar.getUniqueValue();
         data.assigners.push({
-            sys_id: ar.getUniqueValue(),
+            sys_id: assignerSysId,
             name: ar.name + '',
             assignment_group: ar.assignment_group.getDisplayValue() || '(none)',
             running: ar.running == true,
             canManage: canEditAssigner(ar),
-            // ms since epoch, for client-side countdown to next 5-min tick.
-            // null if the engine has not run for this assigner yet.
             lastRunMs: ar.getValue('last_run') ? ar.last_run.dateNumericValue() : null,
-            shifts: getShifts(ar.getUniqueValue()),
-            roster: getRoster(ar.getUniqueValue())
+            // R5 — run window
+            run_start_time: hhmmFromTime(ar.run_start_time.getDisplayValue()),
+            run_end_time:   hhmmFromTime(ar.run_end_time.getDisplayValue()),
+            stop_overnight: ar.stop_overnight == true,
+            // R7 — reassign-responded master + eligibility flags
+            reassign_responded:                  ar.reassign_responded == true,
+            reassign_state_in_progress:          ar.reassign_state_in_progress == true,
+            reassign_state_new:                  ar.reassign_state_new == true,
+            reassign_state_onhold_to_inprogress: ar.reassign_state_onhold_to_inprogress == true,
+            shifts: getShifts(assignerSysId),
+            roster: getRoster(assignerSysId),
+            // R6 — ticket types: enabled + available
+            ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
+            reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables)
         });
     }
 
@@ -220,18 +314,12 @@
         if (!input || !input.action) return;
         switch (input.action) {
             case 'toggleRunning':
-                var a = new GlideRecord(SCOPE + 'assigner');
-                if (a.get(input.assignerSysId) &amp;&amp; canEditAssigner(a)) {
-                    a.running = (a.running != true);
-                    a.update();
-                }
+                editAssigner(input.assignerSysId, function(a) { a.running = (a.running != true); });
                 break;
             case 'setWorking':
                 editRoster(input.rosterSysId, function(r) {
                     var willWork = !!input.working;
                     r.working = willWork;
-                    // R4.6 — when moving into Working without a shift selected,
-                    // prefer last_shift, else the assigner's Default shift.
                     if (willWork &amp;&amp; !r.getValue('shift')) {
                         var preferred = r.getValue('last_shift') || findDefaultShift(r.getValue('assigner'));
                         if (preferred) r.shift = preferred;
@@ -244,7 +332,44 @@
                     if (input.shiftSysId) r.last_shift = input.shiftSysId;
                 });
                 break;
+            case 'setRunTime':
+                editAssigner(input.assignerSysId, function(a) {
+                    var v = ('' + (input.value || '')).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                    if (!v) return;
+                    var hhmmss = pad2(v[1]) + ':' + v[2] + ':' + (v[3] || '00');
+                    if (input.which === 'start')      a.run_start_time = hhmmss;
+                    else if (input.which === 'end')   a.run_end_time   = hhmmss;
+                });
+                break;
+            case 'setBool':
+                var allowed = { stop_overnight: 1, reassign_responded: 1,
+                                reassign_state_in_progress: 1, reassign_state_new: 1,
+                                reassign_state_onhold_to_inprogress: 1 };
+                if (!allowed[input.field]) break;
+                editAssigner(input.assignerSysId, function(a) {
+                    a.setValue(input.field, !!input.value);
+                });
+                break;
+            case 'toggleTicketType':
+            case 'toggleReassignType':
+                var typeTable = SCOPE + (input.action === 'toggleTicketType' ? 'ticket_type_selection' : 'reassign_type_selection');
+                if (!canEditAssignerById(input.assignerSysId)) break;
+                upsertType(typeTable, input.assignerSysId, input.tableName, !!input.enabled);
+                break;
         }
+    }
+
+    function editAssigner(sysId, mutator) {
+        if (!sysId) return;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        if (!a.get(sysId) || !canEditAssigner(a)) return;
+        mutator(a);
+        a.update();
+    }
+
+    function canEditAssignerById(sysId) {
+        var a = new GlideRecord(SCOPE + 'assigner');
+        return a.get(sysId) &amp;&amp; canEditAssigner(a);
     }
 
     function editRoster(rosterSysId, mutator) {
@@ -255,6 +380,25 @@
         if (!a.get(r.getValue('assigner')) || !canEditAssigner(a)) return;
         mutator(r);
         r.update();
+    }
+
+    function upsertType(typeTable, assignerSysId, tableName, enabled) {
+        if (!tableName) return;
+        var t = new GlideRecord(typeTable);
+        t.addQuery('assigner', assignerSysId);
+        t.addQuery('table_name', tableName);
+        t.setLimit(1);
+        t.query();
+        if (t.next()) {
+            t.enabled = enabled;
+            t.update();
+        } else {
+            t.initialize();
+            t.assigner = assignerSysId;
+            t.table_name = tableName;
+            t.enabled = enabled;
+            t.insert();
+        }
     }
 
     function findDefaultShift(assignerSysId) {
@@ -280,10 +424,7 @@
         s.orderBy('name');
         s.query();
         while (s.next()) {
-            shifts.push({
-                sys_id: s.getUniqueValue(),
-                name: s.name + ''
-            });
+            shifts.push({ sys_id: s.getUniqueValue(), name: s.name + '' });
         }
         return shifts;
     }
@@ -308,6 +449,66 @@
         return roster;
     }
 
+    function getTypeRows(assignerSysId, typeTable, available) {
+        var existing = {};
+        var t = new GlideRecord(typeTable);
+        t.addQuery('assigner', assignerSysId);
+        t.query();
+        while (t.next()) {
+            existing[t.getValue('table_name')] = {
+                sys_id:  t.getUniqueValue(),
+                enabled: t.enabled == true
+            };
+        }
+        var rows = [];
+        for (var i = 0; i &lt; available.length; i++) {
+            var avail = available[i];
+            var rec = existing[avail.name];
+            rows.push({
+                table_name: avail.name,
+                label:      avail.label,
+                enabled:    rec ? rec.enabled : false
+            });
+        }
+        return rows;
+    }
+
+    // R6 — descendants of `task` whose dictionary has an `assignment_group`
+    // reference column.
+    function getTaskDescendantsWithGroup() {
+        var taskTbl = new GlideRecord('sys_db_object');
+        if (!taskTbl.get('name', 'task')) return [];
+
+        // BFS over sys_db_object to collect every name that extends task.
+        var found = {};
+        var queue = [taskTbl.getUniqueValue()];
+        while (queue.length) {
+            var parentSysId = queue.shift();
+            var children = new GlideRecord('sys_db_object');
+            children.addQuery('super_class', parentSysId);
+            children.query();
+            while (children.next()) {
+                var n = children.getValue('name');
+                if (!n || found[n]) continue;
+                found[n] = { name: n, label: children.getValue('label') || n };
+                queue.push(children.getUniqueValue());
+            }
+        }
+
+        // Keep only those whose dictionary has an assignment_group column.
+        var result = [];
+        for (var name in found) {
+            var d = new GlideRecord('sys_dictionary');
+            d.addQuery('name', name);
+            d.addQuery('element', 'assignment_group');
+            d.setLimit(1);
+            d.query();
+            if (d.hasNext()) result.push(found[name]);
+        }
+        result.sort(function(a, b) { return ('' + a.label).localeCompare('' + b.label); });
+        return result;
+    }
+
     function isUserInGroup(userSysId, groupSysId) {
         var m = new GlideRecord('sys_user_grmember');
         m.addQuery('user', userSysId);
@@ -316,6 +517,14 @@
         m.query();
         return m.hasNext();
     }
+
+    function hhmmFromTime(disp) {
+        // glide_time display is "HH:MM:SS"; the &lt;input type="time"&gt; wants "HH:MM".
+        var m = ('' + (disp || '')).match(/^(\d{2}):(\d{2})/);
+        return m ? (m[1] + ':' + m[2]) : '';
+    }
+
+    function pad2(s) { s = '' + s; return s.length &lt; 2 ? '0' + s : s; }
 })();
 </script>
         <servicenow>false</servicenow>
@@ -341,6 +550,7 @@
   &lt;uib-tabset ng-if="data.assigners.length" active="c.activeTab"&gt;
     &lt;uib-tab ng-repeat="a in data.assigners" heading="{{a.name}}"&gt;
       &lt;div class="aa-assigner"&gt;
+
         &lt;div class="aa-header"&gt;
           &lt;div&gt;
             &lt;h3&gt;{{a.name}}&lt;/h3&gt;
@@ -413,6 +623,91 @@
             &lt;/ul&gt;
           &lt;/div&gt;
         &lt;/div&gt;
+
+        &lt;div class="aa-settings" ng-if="a.canManage"&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Run window&lt;/h4&gt;
+            &lt;div class="aa-run-row"&gt;
+              &lt;label&gt;
+                Start
+                &lt;input type="time" class="form-control aa-time-input"
+                       ng-model="a.run_start_time"
+                       ng-change="c.setRunTime(a, 'start')"/&gt;
+              &lt;/label&gt;
+              &lt;label&gt;
+                End
+                &lt;input type="time" class="form-control aa-time-input"
+                       ng-model="a.run_end_time"
+                       ng-change="c.setRunTime(a, 'end')"/&gt;
+              &lt;/label&gt;
+              &lt;label class="aa-check"&gt;
+                &lt;input type="checkbox"
+                       ng-model="a.stop_overnight"
+                       ng-change="c.setBool(a, 'stop_overnight')"/&gt;
+                Stop overnight (halt at end time)
+              &lt;/label&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Ticket types &lt;small&gt;(picks up unassigned tickets of these types)&lt;/small&gt;&lt;/h4&gt;
+            &lt;p ng-if="!a.ticketTypes.length" class="aa-empty-row"&gt;&lt;em&gt;No `task` descendants with an assignment_group field found.&lt;/em&gt;&lt;/p&gt;
+            &lt;div class="aa-checkboxes"&gt;
+              &lt;label ng-repeat="t in a.ticketTypes" class="aa-check"&gt;
+                &lt;input type="checkbox"
+                       ng-model="t.enabled"
+                       ng-change="c.toggleTicketType(a, t)"/&gt;
+                {{t.label}} &lt;span class="aa-mono"&gt;({{t.table_name}})&lt;/span&gt;
+              &lt;/label&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4&gt;Unassign from not-working analysts&lt;/h4&gt;
+            &lt;label class="aa-check aa-master"&gt;
+              &lt;input type="checkbox"
+                     ng-model="a.reassign_responded"
+                     ng-change="c.setBool(a, 'reassign_responded')"/&gt;
+              Enable
+            &lt;/label&gt;
+
+            &lt;div class="aa-reassign-body" ng-if="a.reassign_responded"&gt;
+              &lt;p class="aa-help"&gt;A ticket assigned to a not-working analyst is unassigned when its current state matches &lt;strong&gt;any&lt;/strong&gt; ticked box:&lt;/p&gt;
+              &lt;div class="aa-checkboxes aa-checkboxes-horiz"&gt;
+                &lt;label class="aa-check"&gt;
+                  &lt;input type="checkbox"
+                         ng-model="a.reassign_state_in_progress"
+                         ng-change="c.setBool(a, 'reassign_state_in_progress')"/&gt;
+                  In Progress
+                &lt;/label&gt;
+                &lt;label class="aa-check"&gt;
+                  &lt;input type="checkbox"
+                         ng-model="a.reassign_state_new"
+                         ng-change="c.setBool(a, 'reassign_state_new')"/&gt;
+                  New
+                &lt;/label&gt;
+                &lt;label class="aa-check"&gt;
+                  &lt;input type="checkbox"
+                         ng-model="a.reassign_state_onhold_to_inprogress"
+                         ng-change="c.setBool(a, 'reassign_state_onhold_to_inprogress')"/&gt;
+                  On Hold → In Progress
+                &lt;/label&gt;
+              &lt;/div&gt;
+
+              &lt;p class="aa-help" style="margin-top: 12px;"&gt;Apply to these ticket types:&lt;/p&gt;
+              &lt;div class="aa-checkboxes"&gt;
+                &lt;label ng-repeat="t in a.reassignTypes" class="aa-check"&gt;
+                  &lt;input type="checkbox"
+                         ng-model="t.enabled"
+                         ng-change="c.toggleReassignType(a, t)"/&gt;
+                  {{t.label}} &lt;span class="aa-mono"&gt;({{t.table_name}})&lt;/span&gt;
+                &lt;/label&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
       &lt;/div&gt;
     &lt;/uib-tab&gt;
   &lt;/uib-tabset&gt;

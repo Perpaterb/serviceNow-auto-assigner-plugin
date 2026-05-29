@@ -2,21 +2,15 @@ api.controller = function($scope, $interval) {
     var c = this;
     c.activeTab = 0;
 
-    // Engine cadence is 5 minutes (sysauto_script.run_period).
     var CADENCE_MS = 5 * 60 * 1000;
 
-    // Tick the countdowns every second. Pure client-side — no server load.
     var tickHandle = $interval(updateCountdowns, 1000);
-    // Background poll: re-fetch last_run timestamps so the countdown rolls
-    // over without forcing a page refresh. We only touch lastRunMs on the
-    // local model so any in-flight UI state (open dropdowns, etc.) is
-    // preserved.
     var pollHandle = $interval(pollLastRun, 15000);
     $scope.$on('$destroy', function() {
         $interval.cancel(tickHandle);
         $interval.cancel(pollHandle);
     });
-    updateCountdowns(); // first paint without waiting 1s
+    updateCountdowns();
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -39,7 +33,7 @@ api.controller = function($scope, $interval) {
     }
 
     function pollLastRun() {
-        c.server.get({pollLastRun: true}).then(function(response) {
+        c.server.get({ pollLastRun: true }).then(function(response) {
             if (!response || !response.data || !response.data.assigners) return;
             var fresh = {};
             for (var i = 0; i < response.data.assigners.length; i++) {
@@ -47,29 +41,27 @@ api.controller = function($scope, $interval) {
             }
             for (var j = 0; j < c.data.assigners.length; j++) {
                 var local = c.data.assigners[j];
-                if (fresh.hasOwnProperty(local.sys_id)) {
-                    local.lastRunMs = fresh[local.sys_id];
-                }
+                if (fresh.hasOwnProperty(local.sys_id)) local.lastRunMs = fresh[local.sys_id];
             }
         });
     }
 
-    c.toggleRunning = function(assigner) {
+    // ---- actions ----------------------------------------------------------
+
+    c.toggleRunning = function(a) {
         c.data.action = 'toggleRunning';
-        c.data.assignerSysId = assigner.sys_id;
-        c.server.update().then(function() {
-            assigner.running = !assigner.running;
-        });
+        c.data.assignerSysId = a.sys_id;
+        c.server.update().then(function() { a.running = !a.running; });
     };
 
-    c.toggleWorking = function(assigner, entry) {
+    c.toggleWorking = function(a, entry) {
         var willWork = !entry.working;
         c.data.action = 'setWorking';
         c.data.rosterSysId = entry.sys_id;
         c.data.working = willWork;
         c.server.update().then(function(response) {
             entry.working = willWork;
-            var fresh = findRosterEntry(response.data, assigner.sys_id, entry.sys_id);
+            var fresh = findRosterEntry(response.data, a.sys_id, entry.sys_id);
             if (fresh) {
                 entry.shift = fresh.shift;
                 entry.shift_sys_id = fresh.shift_sys_id;
@@ -81,6 +73,38 @@ api.controller = function($scope, $interval) {
         c.data.action = 'setShift';
         c.data.rosterSysId = entry.sys_id;
         c.data.shiftSysId = entry.shift_sys_id;
+        c.server.update();
+    };
+
+    c.setRunTime = function(a, which) {
+        c.data.action = 'setRunTime';
+        c.data.assignerSysId = a.sys_id;
+        c.data.which = which;
+        c.data.value = which === 'start' ? a.run_start_time : a.run_end_time;
+        c.server.update();
+    };
+
+    c.setBool = function(a, field) {
+        c.data.action = 'setBool';
+        c.data.assignerSysId = a.sys_id;
+        c.data.field = field;
+        c.data.value = !!a[field];
+        c.server.update();
+    };
+
+    c.toggleTicketType = function(a, t) {
+        c.data.action = 'toggleTicketType';
+        c.data.assignerSysId = a.sys_id;
+        c.data.tableName = t.table_name;
+        c.data.enabled = !!t.enabled;
+        c.server.update();
+    };
+
+    c.toggleReassignType = function(a, t) {
+        c.data.action = 'toggleReassignType';
+        c.data.assignerSysId = a.sys_id;
+        c.data.tableName = t.table_name;
+        c.data.enabled = !!t.enabled;
         c.server.update();
     };
 
