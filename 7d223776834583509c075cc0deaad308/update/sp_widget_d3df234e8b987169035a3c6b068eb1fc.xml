@@ -347,7 +347,7 @@
             &lt;div class="aa-meta"&gt;Group: {{a.assignment_group}}&lt;/div&gt;
           &lt;/div&gt;
           &lt;div class="aa-status"&gt;
-            &lt;span class="aa-countdown" ng-if="a.countdown" title="Time until the next engine cycle"&gt;
+            &lt;span class="aa-countdown" ng-if="a.running &amp;&amp; a.countdown" title="Time until the next engine cycle"&gt;
               &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
               Next run in {{a.countdown}}
             &lt;/span&gt;
