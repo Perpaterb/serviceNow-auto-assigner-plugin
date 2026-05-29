@@ -122,3 +122,6 @@
 
 .aa-mono { font-family: monospace; color: #888; font-size: 12px; }
 .aa-help { font-size: 13px; color: #666; margin: 6px 0; }
+
+.aa-search { margin-bottom: 8px; font-size: 13px; }
+.aa-scroll { max-height: 260px; overflow-y: auto; }

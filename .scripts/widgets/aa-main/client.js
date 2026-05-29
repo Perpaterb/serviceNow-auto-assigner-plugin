@@ -92,19 +92,21 @@ api.controller = function($scope, $interval) {
         c.server.update();
     };
 
-    c.toggleTicketType = function(a, t) {
+    c.setTicketType = function(a, t, enabled) {
+        t.enabled = enabled;
         c.data.action = 'toggleTicketType';
         c.data.assignerSysId = a.sys_id;
         c.data.tableName = t.table_name;
-        c.data.enabled = !!t.enabled;
+        c.data.enabled = enabled;
         c.server.update();
     };
 
-    c.toggleReassignType = function(a, t) {
+    c.setReassignType = function(a, t, enabled) {
+        t.enabled = enabled;
         c.data.action = 'toggleReassignType';
         c.data.assignerSysId = a.sys_id;
         c.data.tableName = t.table_name;
-        c.data.enabled = !!t.enabled;
+        c.data.enabled = enabled;
         c.server.update();
     };
 

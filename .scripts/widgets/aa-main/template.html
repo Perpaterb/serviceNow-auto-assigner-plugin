@@ -111,14 +111,46 @@
 
           <div class="aa-settings-section">
             <h4>Ticket types <small>(picks up unassigned tickets of these types)</small></h4>
-            <p ng-if="!a.ticketTypes.length" class="aa-empty-row"><em>No `task` descendants with an assignment_group field found.</em></p>
-            <div class="aa-checkboxes">
-              <label ng-repeat="t in a.ticketTypes" class="aa-check">
-                <input type="checkbox"
-                       ng-model="t.enabled"
-                       ng-change="c.toggleTicketType(a, t)"/>
-                {{t.label}} <span class="aa-mono">({{t.table_name}})</span>
-              </label>
+            <div class="aa-rosters">
+              <div class="aa-list">
+                <h4>Active ({{(a.ticketTypes | filter:{enabled:true}).length}})</h4>
+                <ul>
+                  <li ng-repeat="t in a.ticketTypes | filter:{enabled:true} track by t.table_name">
+                    <strong class="aa-name">{{t.label}}</strong>
+                    <span class="aa-row-controls">
+                      <span class="aa-mono">{{t.table_name}}</span>
+                      <button class="btn btn-xs btn-default aa-move-btn"
+                              title="Remove" ng-click="c.setTicketType(a, t, false)">
+                        <i class="fa fa-arrow-right"></i>
+                      </button>
+                    </span>
+                  </li>
+                  <li ng-if="!(a.ticketTypes | filter:{enabled:true}).length" class="aa-empty-row">
+                    <em>No ticket types active</em>
+                  </li>
+                </ul>
+              </div>
+              <div class="aa-list">
+                <h4>Available ({{(a.ticketTypes | filter:{enabled:false} | filter:a.ticketTypeFilter).length}})</h4>
+                <input type="search" class="form-control aa-search"
+                       placeholder="Filter…" ng-model="a.ticketTypeFilter"/>
+                <ul class="aa-scroll">
+                  <li ng-repeat="t in a.ticketTypes | filter:{enabled:false} | filter:a.ticketTypeFilter | limitTo:50 track by t.table_name">
+                    <span class="aa-row-controls aa-row-controls-left">
+                      <button class="btn btn-xs btn-default aa-move-btn"
+                              title="Add" ng-click="c.setTicketType(a, t, true)">
+                        <i class="fa fa-arrow-left"></i>
+                      </button>
+                    </span>
+                    <strong class="aa-name">{{t.label}}</strong>
+                    <span class="aa-mono">{{t.table_name}}</span>
+                  </li>
+                </ul>
+                <p class="aa-help"
+                   ng-if="(a.ticketTypes | filter:{enabled:false} | filter:a.ticketTypeFilter).length > 50">
+                  Showing first 50. Type to filter.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -155,13 +187,46 @@
               </div>
 
               <p class="aa-help" style="margin-top: 12px;">Apply to these ticket types:</p>
-              <div class="aa-checkboxes">
-                <label ng-repeat="t in a.reassignTypes" class="aa-check">
-                  <input type="checkbox"
-                         ng-model="t.enabled"
-                         ng-change="c.toggleReassignType(a, t)"/>
-                  {{t.label}} <span class="aa-mono">({{t.table_name}})</span>
-                </label>
+              <div class="aa-rosters">
+                <div class="aa-list">
+                  <h4>Active ({{(a.reassignTypes | filter:{enabled:true}).length}})</h4>
+                  <ul>
+                    <li ng-repeat="t in a.reassignTypes | filter:{enabled:true} track by t.table_name">
+                      <strong class="aa-name">{{t.label}}</strong>
+                      <span class="aa-row-controls">
+                        <span class="aa-mono">{{t.table_name}}</span>
+                        <button class="btn btn-xs btn-default aa-move-btn"
+                                title="Remove" ng-click="c.setReassignType(a, t, false)">
+                          <i class="fa fa-arrow-right"></i>
+                        </button>
+                      </span>
+                    </li>
+                    <li ng-if="!(a.reassignTypes | filter:{enabled:true}).length" class="aa-empty-row">
+                      <em>No reassign types active</em>
+                    </li>
+                  </ul>
+                </div>
+                <div class="aa-list">
+                  <h4>Available ({{(a.reassignTypes | filter:{enabled:false} | filter:a.reassignTypeFilter).length}})</h4>
+                  <input type="search" class="form-control aa-search"
+                         placeholder="Filter…" ng-model="a.reassignTypeFilter"/>
+                  <ul class="aa-scroll">
+                    <li ng-repeat="t in a.reassignTypes | filter:{enabled:false} | filter:a.reassignTypeFilter | limitTo:50 track by t.table_name">
+                      <span class="aa-row-controls aa-row-controls-left">
+                        <button class="btn btn-xs btn-default aa-move-btn"
+                                title="Add" ng-click="c.setReassignType(a, t, true)">
+                          <i class="fa fa-arrow-left"></i>
+                        </button>
+                      </span>
+                      <strong class="aa-name">{{t.label}}</strong>
+                      <span class="aa-mono">{{t.table_name}}</span>
+                    </li>
+                  </ul>
+                  <p class="aa-help"
+                     ng-if="(a.reassignTypes | filter:{enabled:false} | filter:a.reassignTypeFilter).length > 50">
+                    Showing first 50. Type to filter.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
