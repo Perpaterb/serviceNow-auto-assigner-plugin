@@ -94,11 +94,17 @@ api.controller = function($scope, $interval) {
             if (!response.data.assigners) return;
             var fresh = {};
             for (var i = 0; i < response.data.assigners.length; i++) {
-                fresh[response.data.assigners[i].sys_id] = response.data.assigners[i].lastRunMs;
+                fresh[response.data.assigners[i].sys_id] = response.data.assigners[i];
             }
             for (var j = 0; j < c.data.assigners.length; j++) {
                 var local = c.data.assigners[j];
-                if (fresh.hasOwnProperty(local.sys_id)) local.lastRunMs = fresh[local.sys_id];
+                var f = fresh[local.sys_id];
+                if (!f) continue;
+                // Patch the few fields the engine can change behind our back —
+                // not the whole assigner object, so anything the user is in
+                // the middle of editing (dropdowns, time inputs) is left alone.
+                local.lastRunMs = f.lastRunMs;
+                local.running   = f.running;
             }
         });
     }
