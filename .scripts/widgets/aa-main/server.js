@@ -1,8 +1,13 @@
 (function() {
     var SCOPE = 'x_1578378_aa_';
-    // The role name uses a dot separator (x_1578378_aa.queue_manager), NOT the
-    // underscore table prefix in SCOPE — don't build it from SCOPE.
-    var MANAGER_ROLE = 'x_1578378_aa.queue_manager';
+    // The app scope (x_1578378_aa) is assigned at creation and never changes —
+    // not on publish, not when installed on another instance — so tables stay
+    // x_1578378_aa_* and the role stays x_1578378_aa.queue_manager everywhere.
+    // Read it at runtime so the scope is the single source of truth, and so the
+    // role's dot separator can't drift from SCOPE's underscore table prefix.
+    var SCOPE_NAME = (typeof gs.getCurrentScopeName === 'function' && gs.getCurrentScopeName()) || 'x_1578378_aa';
+    if (SCOPE_NAME.indexOf('x_') !== 0) SCOPE_NAME = 'x_1578378_aa'; // guard odd contexts (e.g. global)
+    var MANAGER_ROLE = SCOPE_NAME + '.queue_manager';
     var userSysId = gs.getUserID();
     var isAdmin   = gs.hasRole('admin');
     var isManager = gs.hasRole(MANAGER_ROLE);
