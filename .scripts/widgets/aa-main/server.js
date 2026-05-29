@@ -4,6 +4,31 @@
     var isAdmin   = gs.hasRole('admin');
     var isManager = gs.hasRole(SCOPE + 'queue_manager');
 
+    // Friendly labels for common ITSM task descendants; raw table name
+    // otherwise. Declared up here so getAssignableTypesForGroup (called
+    // from the main loop below) can see an initialized value.
+    var TABLE_LABELS = {
+        incident: 'Incident',
+        problem: 'Problem',
+        problem_task: 'Problem Task',
+        change_request: 'Change Request',
+        change_task: 'Change Task',
+        sc_request: 'Catalog Request',
+        sc_req_item: 'Catalog Item Request (RITM)',
+        sc_task: 'Catalog Task',
+        pm_project: 'Project',
+        pm_project_task: 'Project Task',
+        demand: 'Demand',
+        rm_story: 'Story',
+        rm_defect: 'Defect',
+        rm_enhancement: 'Enhancement',
+        hr_case: 'HR Case',
+        hr_task: 'HR Task',
+        sn_customerservice_case: 'Customer Service Case',
+        sn_csm_task: 'CSM Task',
+        vtb_task: 'Visual Task Board Task'
+    };
+
     handleInput();
 
     data.user      = gs.getUserDisplayName();
@@ -18,6 +43,8 @@
         var groupSysId = ar.getValue('assignment_group');
         if (!isAdmin && (!groupSysId || !isUserInGroup(userSysId, groupSysId))) continue;
 
+        var assignerSysId = ar.getUniqueValue();
+
         // Keep the roster in sync with current group membership so newly-
         // added members appear immediately instead of after the next engine
         // cycle (and so removed members get soft-deactivated promptly).
@@ -28,7 +55,6 @@
         // custom ones like universal_task.
         var availableTables = getAssignableTypesForGroup(groupSysId);
 
-        var assignerSysId = ar.getUniqueValue();
         // Diagnostic — what does the platform actually return for these fields?
         gs.info('[aa-main] ' + ar.name + ' run_start raw="' + ar.getValue('run_start_time')
                 + '" display="' + ar.run_start_time.getDisplayValue() + '"'
@@ -280,30 +306,7 @@
     // R6 — list of task types that *this group* has historically received
     // tickets for. Uses GlideAggregate on the parent `task` table; the
     // query is polymorphic, so every descendant (including custom ones
-    // like universal_task) appears via its sys_class_name. Pretty labels
-    // for common ITSM tables; raw name for everything else.
-    var TABLE_LABELS = {
-        incident: 'Incident',
-        problem: 'Problem',
-        problem_task: 'Problem Task',
-        change_request: 'Change Request',
-        change_task: 'Change Task',
-        sc_request: 'Catalog Request',
-        sc_req_item: 'Catalog Item Request (RITM)',
-        sc_task: 'Catalog Task',
-        pm_project: 'Project',
-        pm_project_task: 'Project Task',
-        demand: 'Demand',
-        rm_story: 'Story',
-        rm_defect: 'Defect',
-        rm_enhancement: 'Enhancement',
-        hr_case: 'HR Case',
-        hr_task: 'HR Task',
-        sn_customerservice_case: 'Customer Service Case',
-        sn_csm_task: 'CSM Task',
-        vtb_task: 'Visual Task Board Task'
-    };
-
+    // like universal_task) appears via its sys_class_name.
     function getAssignableTypesForGroup(groupSysId) {
         if (!groupSysId) return [];
         var seen = {};
