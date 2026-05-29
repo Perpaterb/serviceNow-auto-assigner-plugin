@@ -29,6 +29,10 @@
 (function execute() {
     var SCOPE = 'x_1578378_aa_';
     var TAG = '[' + SCOPE + 'engine]';
+    // Diagnostic logging gate. Toggle 'x_1578378_aa.debug' to 'true' in
+    // sys_properties.list to enable per-cycle candidate / ticket / skip lines.
+    var DEBUG = gs.getProperty('x_1578378_aa.debug', 'false') == 'true';
+    function dbg(msg) { if (DEBUG) gs.info(msg); }
 
     var assigner = new GlideRecord(SCOPE + 'assigner');
     assigner.addQuery('running', true);
@@ -50,17 +54,17 @@
 
         var now = new GlideDateTime();
         var nowSec = secondsOfDay(now);
-        gs.info(TAG + ' &gt;&gt;&gt; ' + a.name + ' (' + assignerSysId + ') nowSec=' + nowSec
+        dbg(TAG + ' &gt;&gt;&gt; ' + a.name + ' (' + assignerSysId + ') nowSec=' + nowSec
                 + ' display="' + now.getDisplayValue() + '"');
 
         // 1. Time-window gate — display values are in wall-clock TZ so they match nowSec
         var startSec = timeFieldToSeconds(a.run_start_time.getDisplayValue());
         var endSec   = timeFieldToSeconds(a.run_end_time.getDisplayValue());
-        gs.info(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
+        dbg(TAG + '   gate: startSec=' + startSec + ' endSec=' + endSec
                 + ' stop_overnight=' + a.stop_overnight);
-        if (startSec !== null &amp;&amp; nowSec &lt; startSec) { gs.info(TAG + '   skip: before start'); return; }
+        if (startSec !== null &amp;&amp; nowSec &lt; startSec) { dbg(TAG + '   skip: before start'); return; }
         if (a.stop_overnight == true &amp;&amp; endSec !== null &amp;&amp; nowSec &gt; endSec) {
-            gs.info(TAG + '   skip: after end (stop_overnight)'); return;
+            dbg(TAG + '   skip: after end (stop_overnight)'); return;
         }
 
         var groupSysId = a.getValue('assignment_group');
@@ -68,19 +72,19 @@
             gs.warn(TAG + ' assigner ' + a.name + ' has no assignment_group; skipping');
             return;
         }
-        gs.info(TAG + '   assignment_group=' + groupSysId);
+        dbg(TAG + '   assignment_group=' + groupSysId);
 
         // 2. Reconcile roster against current group membership
         reconcileRoster(assignerSysId, groupSysId);
 
         // 3. Build eligible list (active, working, on-shift, not on break)
         var eligible = buildEligible(assignerSysId, nowSec);
-        gs.info(TAG + '   eligible=' + eligible.length);
+        dbg(TAG + '   eligible=' + eligible.length);
 
         // 4 + 5. Distribute unassigned tickets round-robin
         if (eligible.length &gt; 0) {
             var tickets = collectUnassignedTickets(assignerSysId, groupSysId);
-            gs.info(TAG + '   tickets=' + tickets.length);
+            dbg(TAG + '   tickets=' + tickets.length);
             distribute(assignerSysId, eligible, tickets, now);
         }
 
@@ -171,24 +175,24 @@
             var shiftSysId = rosters.getValue('shift');
             var shift = new GlideRecord(SCOPE + 'shift');
             if (!shift.get(shiftSysId)) {
-                gs.info(TAG + '   skip ' + label + ': shift not found ' + shiftSysId);
+                dbg(TAG + '   skip ' + label + ': shift not found ' + shiftSysId);
                 continue;
             }
             var startSec = timeFieldToSeconds(shift.start_time.getDisplayValue());
             var endSec   = timeFieldToSeconds(shift.end_time.getDisplayValue());
-            gs.info(TAG + '   candidate ' + label + ' shift=' + shift.name
+            dbg(TAG + '   candidate ' + label + ' shift=' + shift.name
                     + ' display_start="' + shift.start_time.getDisplayValue() + '" display_end="' + shift.end_time.getDisplayValue()
                     + '" startSec=' + startSec + ' endSec=' + endSec);
             if (startSec === null || endSec === null) {
-                gs.info(TAG + '   skip ' + label + ': could not parse shift times');
+                dbg(TAG + '   skip ' + label + ': could not parse shift times');
                 continue;
             }
             if (nowSec &lt; startSec || nowSec &gt; endSec) {
-                gs.info(TAG + '   skip ' + label + ': off-shift');
+                dbg(TAG + '   skip ' + label + ': off-shift');
                 continue;
             }
             if (isOnBreak(shiftSysId, nowSec)) {
-                gs.info(TAG + '   skip ' + label + ': on break');
+                dbg(TAG + '   skip ' + label + ': on break');
                 continue;
             }
 
@@ -225,7 +229,7 @@
             typeCount++;
             var tableName = '' + types.getValue('table_name');
             tableName = tableName.replace(/^\s+|\s+$/g, ''); // trim whitespace
-            gs.info(TAG + '   ticket_type enabled: "' + tableName + '"');
+            dbg(TAG + '   ticket_type enabled: "' + tableName + '"');
             if (!tableName) continue;
             try {
                 var t = new GlideRecord(tableName);
@@ -242,12 +246,12 @@
                         createdOn: t.getValue('sys_created_on')
                     });
                 }
-                gs.info(TAG + '   ' + tableName + ': ' + n + ' unassigned in group');
+                dbg(TAG + '   ' + tableName + ': ' + n + ' unassigned in group');
             } catch (e) {
                 gs.warn(TAG + ' could not query table ' + tableName + ': ' + e);
             }
         }
-        if (typeCount === 0) gs.info(TAG + '   no ticket_type_selection rows with enabled=true');
+        if (typeCount === 0) dbg(TAG + '   no ticket_type_selection rows with enabled=true');
         // Global oldest-first across all enabled types (R9.6)
         all.sort(function (a, b) {
             return ('' + a.createdOn).localeCompare('' + b.createdOn);
