@@ -132,6 +132,26 @@
           </div>
 
           <div class="aa-settings-section">
+            <h4 class="aa-collapsible" ng-click="a.showRoundRobin = !a.showRoundRobin">
+              <i class="fa" ng-class="{'fa-caret-down': a.showRoundRobin, 'fa-caret-right': !a.showRoundRobin}"></i>
+              Round-robin order ({{a.roundRobinOrder.length}})
+              <small>(currently-eligible analysts in next-up order)</small>
+            </h4>
+            <div ng-if="a.showRoundRobin">
+              <p ng-if="!a.roundRobinOrder.length" class="aa-empty-row">
+                <em>Nobody is currently eligible (no working analysts on shift right now).</em>
+              </p>
+              <ol class="aa-rr-list" ng-if="a.roundRobinOrder.length">
+                <li ng-repeat="r in a.roundRobinOrder track by r.roster_sys_id">
+                  <strong>{{r.analyst}}</strong>
+                  <span class="aa-mono">{{r.shift_name}}</span>
+                  <span class="aa-rr-last">last assigned: {{r.last_assigned_at || 'never'}}</span>
+                </li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="aa-settings-section">
             <h4>Ticket types <small>(picks up unassigned tickets of these types)</small></h4>
             <div class="aa-rosters">
               <div class="aa-list">

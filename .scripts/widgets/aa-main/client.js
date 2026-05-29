@@ -103,8 +103,9 @@ api.controller = function($scope, $interval) {
                 // Patch the few fields the engine can change behind our back —
                 // not the whole assigner object, so anything the user is in
                 // the middle of editing (dropdowns, time inputs) is left alone.
-                local.lastRunMs = f.lastRunMs;
-                local.running   = f.running;
+                local.lastRunMs       = f.lastRunMs;
+                local.running         = f.running;
+                local.roundRobinOrder = f.roundRobinOrder || local.roundRobinOrder;
             }
         });
     }

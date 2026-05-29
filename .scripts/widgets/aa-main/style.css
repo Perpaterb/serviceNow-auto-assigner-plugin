@@ -167,3 +167,24 @@
 
 .aa-search { margin-bottom: 8px; font-size: 13px; }
 .aa-scroll { max-height: 260px; overflow-y: auto; }
+
+.aa-collapsible {
+    cursor: pointer;
+    user-select: none;
+}
+.aa-collapsible .fa { margin-right: 6px; color: #666; }
+.aa-collapsible:hover { color: #1565c0; }
+
+.aa-rr-list {
+    padding-left: 22px;
+    margin: 8px 0 0 0;
+}
+.aa-rr-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.aa-rr-list li:last-child { border-bottom: 0; }
+.aa-rr-last { color: #888; font-size: 12px; margin-left: auto; }

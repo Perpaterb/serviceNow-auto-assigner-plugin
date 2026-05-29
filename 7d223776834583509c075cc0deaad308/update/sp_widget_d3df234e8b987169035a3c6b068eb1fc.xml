@@ -106,8 +106,9 @@
                 // Patch the few fields the engine can change behind our back —
                 // not the whole assigner object, so anything the user is in
                 // the middle of editing (dropdowns, time inputs) is left alone.
-                local.lastRunMs = f.lastRunMs;
-                local.running   = f.running;
+                local.lastRunMs       = f.lastRunMs;
+                local.running         = f.running;
+                local.roundRobinOrder = f.roundRobinOrder || local.roundRobinOrder;
             }
         });
     }
@@ -394,6 +395,27 @@
 
 .aa-search { margin-bottom: 8px; font-size: 13px; }
 .aa-scroll { max-height: 260px; overflow-y: auto; }
+
+.aa-collapsible {
+    cursor: pointer;
+    user-select: none;
+}
+.aa-collapsible .fa { margin-right: 6px; color: #666; }
+.aa-collapsible:hover { color: #1565c0; }
+
+.aa-rr-list {
+    padding-left: 22px;
+    margin: 8px 0 0 0;
+}
+.aa-rr-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.aa-rr-list li:last-child { border-bottom: 0; }
+.aa-rr-last { color: #888; font-size: 12px; margin-left: auto; }
 </css>
         <data_table>sp_instance</data_table>
         <demo_data/>
@@ -515,6 +537,7 @@
             reassign_responded:                  ar.reassign_responded == true,
             shifts: getShifts(assignerSysId),
             roster: getRoster(assignerSysId),
+            roundRobinOrder: getRoundRobinOrder(assignerSysId),
             // R6 — ticket types: enabled + available
             ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
             reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables),
@@ -676,6 +699,69 @@
                 rosters.update();
             }
         }
+    }
+
+    // Mirror of the engine's eligibility list so the manager can see who
+    // gets the next ticket. Sorted oldest-last-assigned first.
+    function getRoundRobinOrder(assignerSysId) {
+        var nowSec = secondsOfDayDisplay();
+        var eligible = [];
+        var rosters = new GlideRecord(SCOPE + 'roster_entry');
+        rosters.addQuery('assigner', assignerSysId);
+        rosters.addQuery('active', true);
+        rosters.addQuery('working', true);
+        rosters.addNotNullQuery('shift');
+        rosters.orderBy('last_assigned_at');
+        rosters.orderBy('sys_id');
+        rosters.query();
+        while (rosters.next()) {
+            var shiftSysId = rosters.getValue('shift');
+            var shift = new GlideRecord(SCOPE + 'shift');
+            if (!shift.get(shiftSysId)) continue;
+            var startSec = hhmmssToSec(shift.start_time.getDisplayValue());
+            var endSec   = hhmmssToSec(shift.end_time.getDisplayValue());
+            if (startSec === null || endSec === null) continue;
+            if (nowSec &lt; startSec || nowSec &gt; endSec) continue;
+            if (isOnBreakAt(shiftSysId, nowSec)) continue;
+
+            eligible.push({
+                roster_sys_id:    rosters.getUniqueValue(),
+                analyst:          rosters.analyst.getDisplayValue(),
+                shift_name:       '' + shift.name,
+                last_assigned_at: rosters.last_assigned_at.getDisplayValue() || ''
+            });
+        }
+        return eligible;
+    }
+
+    function secondsOfDayDisplay() {
+        var disp = (new GlideDateTime()).getDisplayValue();
+        var hhmmss = disp.substring(11);
+        var p = hhmmss.split(':');
+        return parseInt(p[0], 10) * 3600 + parseInt(p[1], 10) * 60 + parseInt(p[2], 10);
+    }
+
+    function hhmmssToSec(disp) {
+        if (!disp) return null;
+        var m = ('' + disp).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if (!m) return null;
+        var hh = parseInt(m[1], 10);
+        if (/PM/i.test(disp) &amp;&amp; hh &lt; 12) hh += 12;
+        if (/AM/i.test(disp) &amp;&amp; hh === 12) hh = 0;
+        return hh * 3600 + parseInt(m[2], 10) * 60 + (m[3] ? parseInt(m[3], 10) : 0);
+    }
+
+    function isOnBreakAt(shiftSysId, nowSec) {
+        var breaks = new GlideRecord(SCOPE + 'shift_break');
+        breaks.addQuery('shift', shiftSysId);
+        breaks.query();
+        while (breaks.next()) {
+            var s = hhmmssToSec(breaks.start_time.getDisplayValue());
+            var e = hhmmssToSec(breaks.end_time.getDisplayValue());
+            if (s === null || e === null) continue;
+            if (nowSec &gt;= s &amp;&amp; nowSec &lt;= e) return true;
+        }
+        return false;
     }
 
     function getShifts(assignerSysId) {
@@ -1097,6 +1183,26 @@
                      ng-change="c.setBool(a, 'stop_overnight')"/&gt;
               &lt;span&gt;Stop at end time — also stops the assigner so it won't run again the next day until a manual Start. Useful for the day before a holiday or on a Friday so tickets aren't auto-assigned over the weekend.&lt;/span&gt;
             &lt;/label&gt;
+          &lt;/div&gt;
+
+          &lt;div class="aa-settings-section"&gt;
+            &lt;h4 class="aa-collapsible" ng-click="a.showRoundRobin = !a.showRoundRobin"&gt;
+              &lt;i class="fa" ng-class="{'fa-caret-down': a.showRoundRobin, 'fa-caret-right': !a.showRoundRobin}"&gt;&lt;/i&gt;
+              Round-robin order ({{a.roundRobinOrder.length}})
+              &lt;small&gt;(currently-eligible analysts in next-up order)&lt;/small&gt;
+            &lt;/h4&gt;
+            &lt;div ng-if="a.showRoundRobin"&gt;
+              &lt;p ng-if="!a.roundRobinOrder.length" class="aa-empty-row"&gt;
+                &lt;em&gt;Nobody is currently eligible (no working analysts on shift right now).&lt;/em&gt;
+              &lt;/p&gt;
+              &lt;ol class="aa-rr-list" ng-if="a.roundRobinOrder.length"&gt;
+                &lt;li ng-repeat="r in a.roundRobinOrder track by r.roster_sys_id"&gt;
+                  &lt;strong&gt;{{r.analyst}}&lt;/strong&gt;
+                  &lt;span class="aa-mono"&gt;{{r.shift_name}}&lt;/span&gt;
+                  &lt;span class="aa-rr-last"&gt;last assigned: {{r.last_assigned_at || 'never'}}&lt;/span&gt;
+                &lt;/li&gt;
+              &lt;/ol&gt;
+            &lt;/div&gt;
           &lt;/div&gt;
 
           &lt;div class="aa-settings-section"&gt;

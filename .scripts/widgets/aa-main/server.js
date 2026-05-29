@@ -105,6 +105,7 @@
             reassign_responded:                  ar.reassign_responded == true,
             shifts: getShifts(assignerSysId),
             roster: getRoster(assignerSysId),
+            roundRobinOrder: getRoundRobinOrder(assignerSysId),
             // R6 — ticket types: enabled + available
             ticketTypes:   getTypeRows(assignerSysId, SCOPE + 'ticket_type_selection',   availableTables),
             reassignTypes: getTypeRows(assignerSysId, SCOPE + 'reassign_type_selection', availableTables),
@@ -266,6 +267,69 @@
                 rosters.update();
             }
         }
+    }
+
+    // Mirror of the engine's eligibility list so the manager can see who
+    // gets the next ticket. Sorted oldest-last-assigned first.
+    function getRoundRobinOrder(assignerSysId) {
+        var nowSec = secondsOfDayDisplay();
+        var eligible = [];
+        var rosters = new GlideRecord(SCOPE + 'roster_entry');
+        rosters.addQuery('assigner', assignerSysId);
+        rosters.addQuery('active', true);
+        rosters.addQuery('working', true);
+        rosters.addNotNullQuery('shift');
+        rosters.orderBy('last_assigned_at');
+        rosters.orderBy('sys_id');
+        rosters.query();
+        while (rosters.next()) {
+            var shiftSysId = rosters.getValue('shift');
+            var shift = new GlideRecord(SCOPE + 'shift');
+            if (!shift.get(shiftSysId)) continue;
+            var startSec = hhmmssToSec(shift.start_time.getDisplayValue());
+            var endSec   = hhmmssToSec(shift.end_time.getDisplayValue());
+            if (startSec === null || endSec === null) continue;
+            if (nowSec < startSec || nowSec > endSec) continue;
+            if (isOnBreakAt(shiftSysId, nowSec)) continue;
+
+            eligible.push({
+                roster_sys_id:    rosters.getUniqueValue(),
+                analyst:          rosters.analyst.getDisplayValue(),
+                shift_name:       '' + shift.name,
+                last_assigned_at: rosters.last_assigned_at.getDisplayValue() || ''
+            });
+        }
+        return eligible;
+    }
+
+    function secondsOfDayDisplay() {
+        var disp = (new GlideDateTime()).getDisplayValue();
+        var hhmmss = disp.substring(11);
+        var p = hhmmss.split(':');
+        return parseInt(p[0], 10) * 3600 + parseInt(p[1], 10) * 60 + parseInt(p[2], 10);
+    }
+
+    function hhmmssToSec(disp) {
+        if (!disp) return null;
+        var m = ('' + disp).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if (!m) return null;
+        var hh = parseInt(m[1], 10);
+        if (/PM/i.test(disp) && hh < 12) hh += 12;
+        if (/AM/i.test(disp) && hh === 12) hh = 0;
+        return hh * 3600 + parseInt(m[2], 10) * 60 + (m[3] ? parseInt(m[3], 10) : 0);
+    }
+
+    function isOnBreakAt(shiftSysId, nowSec) {
+        var breaks = new GlideRecord(SCOPE + 'shift_break');
+        breaks.addQuery('shift', shiftSysId);
+        breaks.query();
+        while (breaks.next()) {
+            var s = hhmmssToSec(breaks.start_time.getDisplayValue());
+            var e = hhmmssToSec(breaks.end_time.getDisplayValue());
+            if (s === null || e === null) continue;
+            if (nowSec >= s && nowSec <= e) return true;
+        }
+        return false;
     }
 
     function getShifts(assignerSysId) {
