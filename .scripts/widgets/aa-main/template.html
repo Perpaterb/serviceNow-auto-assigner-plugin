@@ -7,11 +7,7 @@
     </div>
   </div>
 
-  <p ng-if="!data.assigners.length" class="aa-empty">
-    No auto-assigners visible. You need to be in an assignment group that has one configured.
-  </p>
-
-  <uib-tabset ng-if="data.assigners.length" active="c.activeTab">
+  <uib-tabset active="c.activeTab">
     <uib-tab ng-repeat="a in data.assigners track by a.sys_id" heading="{{a.name}}">
       <div class="aa-assigner">
 
@@ -332,5 +328,38 @@
 
       </div>
     </uib-tab>
+
+    <uib-tab>
+      <uib-tab-heading><i class="fa fa-plus"></i> New assigner</uib-tab-heading>
+      <div class="aa-create-form">
+        <h3>Create a new auto-assigner</h3>
+        <p class="aa-help">A new assigner starts stopped, with a default 24-hour active window and a 09:00–17:00 Default shift (with a 12:30–13:30 break). You can fine-tune everything once it's created.</p>
+        <div class="aa-create-row">
+          <label>
+            Assignment group
+            <select class="form-control" ng-model="c.draftAssigner.groupSysId">
+              <option value="">— pick a group —</option>
+              <option ng-repeat="g in data.availableGroups track by g.sys_id" value="{{g.sys_id}}">{{g.name}}</option>
+            </select>
+          </label>
+          <label>
+            Name
+            <input type="text" class="form-control" ng-model="c.draftAssigner.name" placeholder="e.g. Day shift" maxlength="100" />
+          </label>
+        </div>
+        <p ng-if="!data.availableGroups.length" class="aa-empty-row">
+          <em>You're not a member of any group, so there's nothing to bind a new assigner to.</em>
+        </p>
+        <button class="btn btn-primary"
+                ng-click="c.createAssigner()"
+                ng-disabled="!c.draftAssigner.name || !c.draftAssigner.groupSysId">
+          Create
+        </button>
+      </div>
+    </uib-tab>
   </uib-tabset>
+
+  <p ng-if="!data.assigners.length" class="aa-empty" style="margin-top: 16px;">
+    No auto-assigners yet — use the <strong>+ New assigner</strong> tab above to create one.
+  </p>
 </div>

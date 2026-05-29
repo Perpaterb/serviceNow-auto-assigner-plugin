@@ -49,6 +49,7 @@
     data.isAdmin          = isAdmin;
     data.isManager        = isManager;
     data.instanceNowDisplay = formatNowInSystemTz();
+    data.availableGroups  = getAvailableGroups();
     data.assigners        = [];
 
     // The instance's wall-clock time formatted in the system default TZ
@@ -165,7 +166,26 @@
                 if (!canEditAssignerById(input.assignerSysId)) break;
                 upsertReassignState(input.assignerSysId, input.tableName, input.stateValue, !!input.enabled);
                 break;
+            case 'createAssigner':
+                createAssigner(input.name, input.groupSysId);
+                break;
         }
+    }
+
+    function createAssigner(name, groupSysId) {
+        if (!name || !groupSysId) return;
+        // Non-admins must be in the group they're creating an assigner for.
+        if (!isAdmin && !isUserInGroup(userSysId, groupSysId)) return;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        a.initialize();
+        a.name = ('' + name).substring(0, 100);
+        a.assignment_group = groupSysId;
+        a.running = false;
+        a.run_start_time = '00:00:00';
+        a.run_end_time   = '23:59:59';
+        a.stop_overnight = false;
+        a.insert();
+        // Seed BR auto-creates the Default shift on insert.
     }
 
     function editAssigner(sysId, mutator) {
@@ -605,6 +625,35 @@
         if (ai !== -1) return -1;
         if (bi !== -1) return 1;
         return ('' + a.label).localeCompare('' + b.label);
+    }
+
+    // Groups this user can create an assigner for. Admin sees every active
+    // group on the instance; everyone else only the ones they're a member of.
+    function getAvailableGroups() {
+        var groups = [];
+        if (isAdmin) {
+            var g = new GlideRecord('sys_user_group');
+            g.addQuery('active', true);
+            g.orderBy('name');
+            g.setLimit(1000);
+            g.query();
+            while (g.next()) {
+                groups.push({ sys_id: g.getUniqueValue(), name: '' + g.name });
+            }
+        } else {
+            var m = new GlideRecord('sys_user_grmember');
+            m.addQuery('user', userSysId);
+            m.query();
+            var seen = {};
+            while (m.next()) {
+                var gid = m.getValue('group');
+                if (!gid || seen[gid]) continue;
+                seen[gid] = true;
+                groups.push({ sys_id: gid, name: m.group.getDisplayValue() });
+            }
+            groups.sort(function (a, b) { return ('' + a.name).localeCompare('' + b.name); });
+        }
+        return groups;
     }
 
     function isUserInGroup(userSysId, groupSysId) {

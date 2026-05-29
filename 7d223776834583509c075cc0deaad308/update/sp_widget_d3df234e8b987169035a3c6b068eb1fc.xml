@@ -26,6 +26,28 @@
         return !!(c.sectionState[a.sys_id] &amp;&amp; c.sectionState[a.sys_id][key]);
     };
 
+    c.draftAssigner = { name: '', groupSysId: '' };
+
+    c.createAssigner = function() {
+        var d = c.draftAssigner;
+        if (!d.name || !d.groupSysId) return;
+        c.data.action = 'createAssigner';
+        c.data.name = d.name;
+        c.data.groupSysId = d.groupSysId;
+        c.server.update().then(function(response) {
+            c.draftAssigner = { name: '', groupSysId: '' };
+            // Jump to the newly-created assigner's tab if we can find it.
+            if (response &amp;&amp; response.data &amp;&amp; response.data.assigners) {
+                for (var i = 0; i &lt; response.data.assigners.length; i++) {
+                    if (response.data.assigners[i].name === d.name) {
+                        c.activeTab = i;
+                        break;
+                    }
+                }
+            }
+        });
+    };
+
     var CADENCE_MS = 5 * 60 * 1000;
 
     // Skew between this browser's local clock and the instance's wall-clock,
@@ -486,6 +508,23 @@
     background: #fff3e0;
 }
 .aa-activity-arrow { color: #999; }
+
+.aa-create-form { padding: 20px 4px; max-width: 640px; }
+.aa-create-form h3 { margin-top: 0; }
+.aa-create-row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+}
+.aa-create-row label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+    font-size: 13px;
+    color: #555;
+    gap: 4px;
+}
 </css>
         <data_table>sp_instance</data_table>
         <demo_data/>
@@ -551,6 +590,7 @@
     data.isAdmin          = isAdmin;
     data.isManager        = isManager;
     data.instanceNowDisplay = formatNowInSystemTz();
+    data.availableGroups  = getAvailableGroups();
     data.assigners        = [];
 
     // The instance's wall-clock time formatted in the system default TZ
@@ -667,7 +707,26 @@
                 if (!canEditAssignerById(input.assignerSysId)) break;
                 upsertReassignState(input.assignerSysId, input.tableName, input.stateValue, !!input.enabled);
                 break;
+            case 'createAssigner':
+                createAssigner(input.name, input.groupSysId);
+                break;
         }
+    }
+
+    function createAssigner(name, groupSysId) {
+        if (!name || !groupSysId) return;
+        // Non-admins must be in the group they're creating an assigner for.
+        if (!isAdmin &amp;&amp; !isUserInGroup(userSysId, groupSysId)) return;
+        var a = new GlideRecord(SCOPE + 'assigner');
+        a.initialize();
+        a.name = ('' + name).substring(0, 100);
+        a.assignment_group = groupSysId;
+        a.running = false;
+        a.run_start_time = '00:00:00';
+        a.run_end_time   = '23:59:59';
+        a.stop_overnight = false;
+        a.insert();
+        // Seed BR auto-creates the Default shift on insert.
     }
 
     function editAssigner(sysId, mutator) {
@@ -1109,6 +1168,35 @@
         return ('' + a.label).localeCompare('' + b.label);
     }
 
+    // Groups this user can create an assigner for. Admin sees every active
+    // group on the instance; everyone else only the ones they're a member of.
+    function getAvailableGroups() {
+        var groups = [];
+        if (isAdmin) {
+            var g = new GlideRecord('sys_user_group');
+            g.addQuery('active', true);
+            g.orderBy('name');
+            g.setLimit(1000);
+            g.query();
+            while (g.next()) {
+                groups.push({ sys_id: g.getUniqueValue(), name: '' + g.name });
+            }
+        } else {
+            var m = new GlideRecord('sys_user_grmember');
+            m.addQuery('user', userSysId);
+            m.query();
+            var seen = {};
+            while (m.next()) {
+                var gid = m.getValue('group');
+                if (!gid || seen[gid]) continue;
+                seen[gid] = true;
+                groups.push({ sys_id: gid, name: m.group.getDisplayValue() });
+            }
+            groups.sort(function (a, b) { return ('' + a.name).localeCompare('' + b.name); });
+        }
+        return groups;
+    }
+
     function isUserInGroup(userSysId, groupSysId) {
         var m = new GlideRecord('sys_user_grmember');
         m.addQuery('user', userSysId);
@@ -1155,11 +1243,7 @@
     &lt;/div&gt;
   &lt;/div&gt;
 
-  &lt;p ng-if="!data.assigners.length" class="aa-empty"&gt;
-    No auto-assigners visible. You need to be in an assignment group that has one configured.
-  &lt;/p&gt;
-
-  &lt;uib-tabset ng-if="data.assigners.length" active="c.activeTab"&gt;
+  &lt;uib-tabset active="c.activeTab"&gt;
     &lt;uib-tab ng-repeat="a in data.assigners track by a.sys_id" heading="{{a.name}}"&gt;
       &lt;div class="aa-assigner"&gt;
 
@@ -1480,7 +1564,40 @@
 
       &lt;/div&gt;
     &lt;/uib-tab&gt;
+
+    &lt;uib-tab&gt;
+      &lt;uib-tab-heading&gt;&lt;i class="fa fa-plus"&gt;&lt;/i&gt; New assigner&lt;/uib-tab-heading&gt;
+      &lt;div class="aa-create-form"&gt;
+        &lt;h3&gt;Create a new auto-assigner&lt;/h3&gt;
+        &lt;p class="aa-help"&gt;A new assigner starts stopped, with a default 24-hour active window and a 09:00–17:00 Default shift (with a 12:30–13:30 break). You can fine-tune everything once it's created.&lt;/p&gt;
+        &lt;div class="aa-create-row"&gt;
+          &lt;label&gt;
+            Assignment group
+            &lt;select class="form-control" ng-model="c.draftAssigner.groupSysId"&gt;
+              &lt;option value=""&gt;— pick a group —&lt;/option&gt;
+              &lt;option ng-repeat="g in data.availableGroups track by g.sys_id" value="{{g.sys_id}}"&gt;{{g.name}}&lt;/option&gt;
+            &lt;/select&gt;
+          &lt;/label&gt;
+          &lt;label&gt;
+            Name
+            &lt;input type="text" class="form-control" ng-model="c.draftAssigner.name" placeholder="e.g. Day shift" maxlength="100" /&gt;
+          &lt;/label&gt;
+        &lt;/div&gt;
+        &lt;p ng-if="!data.availableGroups.length" class="aa-empty-row"&gt;
+          &lt;em&gt;You're not a member of any group, so there's nothing to bind a new assigner to.&lt;/em&gt;
+        &lt;/p&gt;
+        &lt;button class="btn btn-primary"
+                ng-click="c.createAssigner()"
+                ng-disabled="!c.draftAssigner.name || !c.draftAssigner.groupSysId"&gt;
+          Create
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/uib-tab&gt;
   &lt;/uib-tabset&gt;
+
+  &lt;p ng-if="!data.assigners.length" class="aa-empty" style="margin-top: 16px;"&gt;
+    No auto-assigners yet — use the &lt;strong&gt;+ New assigner&lt;/strong&gt; tab above to create one.
+  &lt;/p&gt;
 &lt;/div&gt;
 </template>
     </sp_widget>

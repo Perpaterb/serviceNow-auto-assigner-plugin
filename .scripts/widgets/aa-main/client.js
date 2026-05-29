@@ -23,6 +23,28 @@ api.controller = function($scope, $interval) {
         return !!(c.sectionState[a.sys_id] && c.sectionState[a.sys_id][key]);
     };
 
+    c.draftAssigner = { name: '', groupSysId: '' };
+
+    c.createAssigner = function() {
+        var d = c.draftAssigner;
+        if (!d.name || !d.groupSysId) return;
+        c.data.action = 'createAssigner';
+        c.data.name = d.name;
+        c.data.groupSysId = d.groupSysId;
+        c.server.update().then(function(response) {
+            c.draftAssigner = { name: '', groupSysId: '' };
+            // Jump to the newly-created assigner's tab if we can find it.
+            if (response && response.data && response.data.assigners) {
+                for (var i = 0; i < response.data.assigners.length; i++) {
+                    if (response.data.assigners[i].name === d.name) {
+                        c.activeTab = i;
+                        break;
+                    }
+                }
+            }
+        });
+    };
+
     var CADENCE_MS = 5 * 60 * 1000;
 
     // Skew between this browser's local clock and the instance's wall-clock,
