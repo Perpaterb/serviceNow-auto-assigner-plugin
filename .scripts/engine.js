@@ -53,11 +53,14 @@
         // 23:59, and weekend hours don't auto-assign.
         if (startSec !== null && nowSec < startSec) { dbg(TAG + '   skip: before start'); return; }
         if (endSec !== null && nowSec > endSec) {
-            if (a.stop_overnight == true) {
+            var soRaw  = a.getValue('stop_overnight');
+            var soFlag = (soRaw === '1' || soRaw === 'true' || soRaw === true);
+            gs.info(TAG + ' past end for ' + a.name + '; stop_overnight raw="' + soRaw + '" flag=' + soFlag);
+            if (soFlag) {
                 a.running  = false;
                 a.last_run = now;
-                a.update();
-                gs.info(TAG + ' ' + a.name + ' auto-stopped (past end_time + stop_overnight)');
+                var ok = a.update();
+                gs.info(TAG + ' ' + a.name + ' auto-stop attempted, update() returned ' + ok);
             } else {
                 dbg(TAG + '   skip: past end (will resume at next start)');
             }
