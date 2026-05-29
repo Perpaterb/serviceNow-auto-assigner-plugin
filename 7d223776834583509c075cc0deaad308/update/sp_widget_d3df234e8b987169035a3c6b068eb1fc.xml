@@ -280,9 +280,23 @@
     var isAdmin   = gs.hasRole('admin');
     var isManager = gs.hasRole(SCOPE + 'queue_manager');
 
-    // Friendly labels for common ITSM task descendants; raw table name
-    // otherwise. Declared up here so getAssignableTypesForGroup (called
-    // from the main loop below) can see an initialized value.
+    // Type-list config, declared up here so it's initialized before the
+    // main loop runs (function declarations hoist; var initializations
+    // do not).
+    var PINNED_ORDER = [
+        'incident', 'sc_req_item', 'sc_task', 'sc_request',
+        'change_request', 'change_task',
+        'problem', 'problem_task',
+        'hr_case', 'hr_task',
+        'sn_customerservice_case', 'sn_csm_task',
+        'vtb_task'
+    ];
+    var EXCLUDED = {
+        sysapproval_group:    1,
+        sysapproval_approver: 1,
+        sysapproval:          1,
+        sys_trigger:          1
+    };
     var TABLE_LABELS = {
         incident: 'Incident',
         problem: 'Problem',
@@ -587,21 +601,6 @@
     // Walks sys_db_object via BFS over the super_class chain. If the
     // cross-scope read fails (returns 0 descendants), we fall back to the
     // group-history query so the list isn't empty.
-    var PINNED_ORDER = [
-        'incident', 'sc_req_item', 'sc_task', 'sc_request',
-        'change_request', 'change_task',
-        'problem', 'problem_task',
-        'hr_case', 'hr_task',
-        'sn_customerservice_case', 'sn_csm_task',
-        'vtb_task'
-    ];
-    var EXCLUDED = {
-        sysapproval_group:    1,
-        sysapproval_approver: 1,
-        sysapproval:          1,
-        sys_trigger:          1
-    };
-
     function getAllTaskDescendants() {
         var task = new GlideRecord('sys_db_object');
         if (!task.get('name', 'task')) {
