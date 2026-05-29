@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script">
+    <sys_script action="INSERT_OR_UPDATE">
+        <abort_action>false</abort_action>
+        <access>package_private</access>
+        <action_delete>false</action_delete>
+        <action_insert>true</action_insert>
+        <action_query>false</action_query>
+        <action_update>false</action_update>
+        <active>true</active>
+        <add_message>false</add_message>
+        <advanced>true</advanced>
+        <change_fields>false</change_fields>
+        <client_callable>false</client_callable>
+        <collection>x_1578378_aa_assigner</collection>
+        <condition/>
+        <description>Creates a Default shift (09:00-17:00 with 12:30-13:30 break) for each new assigner.</description>
+        <execute_function>false</execute_function>
+        <filter_condition/>
+        <is_rest>false</is_rest>
+        <message/>
+        <name>Seed Default Shift on Assigner Insert</name>
+        <order>100</order>
+        <priority>100</priority>
+        <rest_method/>
+        <rest_method_text/>
+        <rest_service/>
+        <rest_service_text/>
+        <rest_variables/>
+        <role_conditions/>
+        <script>// After-insert business rule on x_1578378_aa_assigner.
+//
+// Seeds the built-in Default shift (09:00–17:00 with break 12:30–13:30,
+// per R3.3) on every newly-created assigner so managers don't have to
+// build it by hand.
+(function executeRule(current, previous /*null when async*/) {
+    var SCOPE = 'x_1578378_aa_';
+
+    var shift = new GlideRecord(SCOPE + 'shift');
+    shift.initialize();
+    shift.assigner   = current.sys_id;
+    shift.name       = 'Default';
+    shift.start_time = '09:00:00';
+    shift.end_time   = '17:00:00';
+    shift.is_default = true;
+    var shiftSysId = shift.insert();
+    if (!shiftSysId) {
+        gs.warn('[x_1578378_aa seed] could not insert Default shift for assigner ' + current.sys_id);
+        return;
+    }
+
+    var br = new GlideRecord(SCOPE + 'shift_break');
+    br.initialize();
+    br.shift      = shiftSysId;
+    br.start_time = '12:30:00';
+    br.end_time   = '13:30:00';
+    br.insert();
+})(current, previous);
+</script>
+        <sys_class_name>sys_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-29 00:00:00</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>7e9bc0dab694a525f101c12d0fb56279</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Seed Default Shift on Assigner Insert</sys_name>
+        <sys_package display_value="Auto Assigner" source="x_1578378_aa">7d223776834583509c075cc0deaad308</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
+        <sys_update_name>sys_script_7e9bc0dab694a525f101c12d0fb56279</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-29 00:00:00</sys_updated_on>
+        <template/>
+        <when>after</when>
+    </sys_script>
+</record_update>
