@@ -5,6 +5,27 @@
     var c = this;
     c.activeTab = 0;
 
+    // Per-assigner expanded/collapsed state for the collapsible sections.
+    // Kept on the controller (not c.data) so it survives the c.data
+    // replacement that c.server.update() does, and persisted to
+    // localStorage so page reloads also remember the choice.
+    var STORAGE_KEY = 'aa-main:expanded';
+    try {
+        c.sectionState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) {
+        c.sectionState = {};
+    }
+
+    c.toggleSection = function(a, key) {
+        if (!c.sectionState[a.sys_id]) c.sectionState[a.sys_id] = {};
+        c.sectionState[a.sys_id][key] = !c.sectionState[a.sys_id][key];
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(c.sectionState)); } catch (e) {}
+    };
+
+    c.isExpanded = function(a, key) {
+        return !!(c.sectionState[a.sys_id] &amp;&amp; c.sectionState[a.sys_id][key]);
+    };
+
     var CADENCE_MS = 5 * 60 * 1000;
 
     // Skew between this browser's local clock and the instance's wall-clock,
@@ -1192,12 +1213,12 @@
           &lt;/div&gt;
 
           &lt;div class="aa-settings-section"&gt;
-            &lt;h4 class="aa-collapsible" ng-click="a.showRoundRobin = !a.showRoundRobin"&gt;
-              &lt;i class="fa" ng-class="{'fa-caret-down': a.showRoundRobin, 'fa-caret-right': !a.showRoundRobin}"&gt;&lt;/i&gt;
+            &lt;h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'rr')"&gt;
+              &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rr'), 'fa-caret-right': !c.isExpanded(a, 'rr')}"&gt;&lt;/i&gt;
               Round-robin order ({{a.roundRobinOrder.length}})
               &lt;small&gt;(currently-eligible analysts in next-up order)&lt;/small&gt;
             &lt;/h4&gt;
-            &lt;div ng-if="a.showRoundRobin"&gt;
+            &lt;div ng-if="c.isExpanded(a, 'rr')"&gt;
               &lt;p ng-if="!a.roundRobinOrder.length" class="aa-empty-row"&gt;
                 &lt;em&gt;Nobody is currently eligible (no working analysts on shift right now).&lt;/em&gt;
               &lt;/p&gt;
@@ -1212,12 +1233,12 @@
           &lt;/div&gt;
 
           &lt;div class="aa-settings-section"&gt;
-            &lt;h4 class="aa-collapsible" ng-click="a.showTicketTypes = !a.showTicketTypes"&gt;
-              &lt;i class="fa" ng-class="{'fa-caret-down': a.showTicketTypes, 'fa-caret-right': !a.showTicketTypes}"&gt;&lt;/i&gt;
+            &lt;h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'tt')"&gt;
+              &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'tt'), 'fa-caret-right': !c.isExpanded(a, 'tt')}"&gt;&lt;/i&gt;
               Ticket types ({{(a.ticketTypes | filter:{enabled:true}).length}})
               &lt;small&gt;(picks up unassigned tickets of these types)&lt;/small&gt;
             &lt;/h4&gt;
-            &lt;div class="aa-rosters" ng-if="a.showTicketTypes"&gt;
+            &lt;div class="aa-rosters" ng-if="c.isExpanded(a, 'tt')"&gt;
               &lt;div class="aa-list"&gt;
                 &lt;h4&gt;Active ({{(a.ticketTypes | filter:{enabled:true}).length}})&lt;/h4&gt;
                 &lt;ul&gt;
@@ -1270,11 +1291,11 @@
             &lt;/label&gt;
 
             &lt;div class="aa-reassign-body" ng-if="a.reassign_responded"&gt;
-              &lt;h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignTypes = !a.showReassignTypes"&gt;
-                &lt;i class="fa" ng-class="{'fa-caret-down': a.showReassignTypes, 'fa-caret-right': !a.showReassignTypes}"&gt;&lt;/i&gt;
+              &lt;h4 class="aa-collapsible aa-sub-collapsible" ng-click="c.toggleSection(a, 'rsT')"&gt;
+                &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rsT'), 'fa-caret-right': !c.isExpanded(a, 'rsT')}"&gt;&lt;/i&gt;
                 Apply to these ticket types ({{(a.reassignTypes | filter:{enabled:true}).length}})
               &lt;/h4&gt;
-              &lt;div class="aa-rosters" ng-if="a.showReassignTypes"&gt;
+              &lt;div class="aa-rosters" ng-if="c.isExpanded(a, 'rsT')"&gt;
                 &lt;div class="aa-list"&gt;
                   &lt;h4&gt;Active ({{(a.reassignTypes | filter:{enabled:true}).length}})&lt;/h4&gt;
                   &lt;ul&gt;
@@ -1316,15 +1337,15 @@
                 &lt;/div&gt;
               &lt;/div&gt;
 
-              &lt;h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignStates = !a.showReassignStates"&gt;
-                &lt;i class="fa" ng-class="{'fa-caret-down': a.showReassignStates, 'fa-caret-right': !a.showReassignStates}"&gt;&lt;/i&gt;
+              &lt;h4 class="aa-collapsible aa-sub-collapsible" ng-click="c.toggleSection(a, 'rsS')"&gt;
+                &lt;i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rsS'), 'fa-caret-right': !c.isExpanded(a, 'rsS')}"&gt;&lt;/i&gt;
                 When a ticket is in one of these states ({{(a.reassignStates | filter:{enabled:true}).length}})
                 &lt;small&gt;(and assigned to a not-working analyst, unassign it)&lt;/small&gt;
               &lt;/h4&gt;
-              &lt;p ng-if="a.showReassignStates &amp;&amp; !a.reassignStates.length" class="aa-empty-row"&gt;
+              &lt;p ng-if="c.isExpanded(a, 'rsS') &amp;&amp; !a.reassignStates.length" class="aa-empty-row"&gt;
                 &lt;em&gt;Add a ticket type above to see its possible states here.&lt;/em&gt;
               &lt;/p&gt;
-              &lt;div class="aa-rosters" ng-if="a.showReassignStates &amp;&amp; a.reassignStates.length"&gt;
+              &lt;div class="aa-rosters" ng-if="c.isExpanded(a, 'rsS') &amp;&amp; a.reassignStates.length"&gt;
                 &lt;div class="aa-list"&gt;
                   &lt;h4&gt;Active ({{(a.reassignStates | filter:{enabled:true}).length}})&lt;/h4&gt;
                   &lt;ul&gt;

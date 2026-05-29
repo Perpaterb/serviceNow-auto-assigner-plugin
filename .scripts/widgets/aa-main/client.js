@@ -2,6 +2,27 @@ api.controller = function($scope, $interval) {
     var c = this;
     c.activeTab = 0;
 
+    // Per-assigner expanded/collapsed state for the collapsible sections.
+    // Kept on the controller (not c.data) so it survives the c.data
+    // replacement that c.server.update() does, and persisted to
+    // localStorage so page reloads also remember the choice.
+    var STORAGE_KEY = 'aa-main:expanded';
+    try {
+        c.sectionState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) {
+        c.sectionState = {};
+    }
+
+    c.toggleSection = function(a, key) {
+        if (!c.sectionState[a.sys_id]) c.sectionState[a.sys_id] = {};
+        c.sectionState[a.sys_id][key] = !c.sectionState[a.sys_id][key];
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(c.sectionState)); } catch (e) {}
+    };
+
+    c.isExpanded = function(a, key) {
+        return !!(c.sectionState[a.sys_id] && c.sectionState[a.sys_id][key]);
+    };
+
     var CADENCE_MS = 5 * 60 * 1000;
 
     // Skew between this browser's local clock and the instance's wall-clock,

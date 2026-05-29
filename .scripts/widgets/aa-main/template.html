@@ -132,12 +132,12 @@
           </div>
 
           <div class="aa-settings-section">
-            <h4 class="aa-collapsible" ng-click="a.showRoundRobin = !a.showRoundRobin">
-              <i class="fa" ng-class="{'fa-caret-down': a.showRoundRobin, 'fa-caret-right': !a.showRoundRobin}"></i>
+            <h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'rr')">
+              <i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rr'), 'fa-caret-right': !c.isExpanded(a, 'rr')}"></i>
               Round-robin order ({{a.roundRobinOrder.length}})
               <small>(currently-eligible analysts in next-up order)</small>
             </h4>
-            <div ng-if="a.showRoundRobin">
+            <div ng-if="c.isExpanded(a, 'rr')">
               <p ng-if="!a.roundRobinOrder.length" class="aa-empty-row">
                 <em>Nobody is currently eligible (no working analysts on shift right now).</em>
               </p>
@@ -152,12 +152,12 @@
           </div>
 
           <div class="aa-settings-section">
-            <h4 class="aa-collapsible" ng-click="a.showTicketTypes = !a.showTicketTypes">
-              <i class="fa" ng-class="{'fa-caret-down': a.showTicketTypes, 'fa-caret-right': !a.showTicketTypes}"></i>
+            <h4 class="aa-collapsible" ng-click="c.toggleSection(a, 'tt')">
+              <i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'tt'), 'fa-caret-right': !c.isExpanded(a, 'tt')}"></i>
               Ticket types ({{(a.ticketTypes | filter:{enabled:true}).length}})
               <small>(picks up unassigned tickets of these types)</small>
             </h4>
-            <div class="aa-rosters" ng-if="a.showTicketTypes">
+            <div class="aa-rosters" ng-if="c.isExpanded(a, 'tt')">
               <div class="aa-list">
                 <h4>Active ({{(a.ticketTypes | filter:{enabled:true}).length}})</h4>
                 <ul>
@@ -210,11 +210,11 @@
             </label>
 
             <div class="aa-reassign-body" ng-if="a.reassign_responded">
-              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignTypes = !a.showReassignTypes">
-                <i class="fa" ng-class="{'fa-caret-down': a.showReassignTypes, 'fa-caret-right': !a.showReassignTypes}"></i>
+              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="c.toggleSection(a, 'rsT')">
+                <i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rsT'), 'fa-caret-right': !c.isExpanded(a, 'rsT')}"></i>
                 Apply to these ticket types ({{(a.reassignTypes | filter:{enabled:true}).length}})
               </h4>
-              <div class="aa-rosters" ng-if="a.showReassignTypes">
+              <div class="aa-rosters" ng-if="c.isExpanded(a, 'rsT')">
                 <div class="aa-list">
                   <h4>Active ({{(a.reassignTypes | filter:{enabled:true}).length}})</h4>
                   <ul>
@@ -256,15 +256,15 @@
                 </div>
               </div>
 
-              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="a.showReassignStates = !a.showReassignStates">
-                <i class="fa" ng-class="{'fa-caret-down': a.showReassignStates, 'fa-caret-right': !a.showReassignStates}"></i>
+              <h4 class="aa-collapsible aa-sub-collapsible" ng-click="c.toggleSection(a, 'rsS')">
+                <i class="fa" ng-class="{'fa-caret-down': c.isExpanded(a, 'rsS'), 'fa-caret-right': !c.isExpanded(a, 'rsS')}"></i>
                 When a ticket is in one of these states ({{(a.reassignStates | filter:{enabled:true}).length}})
                 <small>(and assigned to a not-working analyst, unassign it)</small>
               </h4>
-              <p ng-if="a.showReassignStates && !a.reassignStates.length" class="aa-empty-row">
+              <p ng-if="c.isExpanded(a, 'rsS') && !a.reassignStates.length" class="aa-empty-row">
                 <em>Add a ticket type above to see its possible states here.</em>
               </p>
-              <div class="aa-rosters" ng-if="a.showReassignStates && a.reassignStates.length">
+              <div class="aa-rosters" ng-if="c.isExpanded(a, 'rsS') && a.reassignStates.length">
                 <div class="aa-list">
                   <h4>Active ({{(a.reassignStates | filter:{enabled:true}).length}})</h4>
                   <ul>
