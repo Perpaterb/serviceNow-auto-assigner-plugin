@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script>api.controller = function($scope, $interval) {
+        <client_script>api.controller = function($scope, $interval, $timeout) {
     var c = this;
     // Open on the first assigner (index 0). Only land on the "New assigner"
     // tab (index -1) when there are no assigners yet.
-    c.activeTab = (c.data &amp;&amp; c.data.assigners &amp;&amp; c.data.assigners.length) ? 0 : -1;
+    function defaultTab() {
+        return (c.data &amp;&amp; c.data.assigners &amp;&amp; c.data.assigners.length) ? 0 : -1;
+    }
+    c.activeTab = defaultTab();
+    // The ng-repeat tabs register a tick after the static "New assigner" tab,
+    // so on first paint the tabset can latch onto that last tab. Re-assert the
+    // intended tab once the repeated tabs exist.
+    $timeout(function() { c.activeTab = defaultTab(); });
 
     // Per-assigner expanded/collapsed state for the collapsible sections.
     // Kept on the controller (not c.data) so it survives the c.data
@@ -87,8 +94,20 @@
         });
     };
 
-    c.saveShift = function(a, s) {
-        if (!s.name || !isValidHhmm(s.start_time) || !isValidHhmm(s.end_time)) return;
+    // Auto-save a shift when one of its fields loses focus. `prop` names the
+    // field just edited: 'start_time'/'end_time' get normalized (and reverted
+    // if invalid); a blank name reverts to the previous value. Nothing is
+    // persisted unless the whole row is valid.
+    c.commitShift = function(a, s, prop) {
+        var field = prop || 'name';
+        if (prop === 'start_time' || prop === 'end_time') {
+            c.timeBlur(s, prop);
+        } else if (!s.name &amp;&amp; s['$prev_name']) {
+            s.name = s['$prev_name'];
+        }
+        // Unchanged since focus (or an invalid edit that just reverted) — skip.
+        if (s['$prev_' + field] === s[field]) return;
+        if (!s.name || normalizeTime(s.start_time) === null || normalizeTime(s.end_time) === null) return;
         c.data.action = 'updateShift';
         c.data.shiftSysId = s.sys_id;
         c.data.name  = s.name;
@@ -111,8 +130,11 @@
         c.server.update();
     };
 
-    c.saveBreak = function(a, s, b) {
-        if (!isValidHhmm(b.start_time) || !isValidHhmm(b.end_time)) return;
+    // Auto-save a break when one of its time fields loses focus.
+    c.commitBreak = function(a, s, b, prop) {
+        c.timeBlur(b, prop);
+        if (b['$prev_' + prop] === b[prop]) return; // unchanged or reverted
+        if (normalizeTime(b.start_time) === null || normalizeTime(b.end_time) === null) return;
         c.data.action = 'updateBreak';
         c.data.breakSysId = b.sys_id;
         c.data.start = b.start_time;
@@ -2044,23 +2066,23 @@
                 &lt;label&gt;
                   Shift name
                   &lt;input type="text" class="form-control" maxlength="100"
-                         ng-model="s.name" ng-readonly="a.running"/&gt;
+                         ng-model="s.name" ng-readonly="a.running"
+                         ng-focus="c.timeFocus(s, 'name')" ng-blur="c.commitShift(a, s)"/&gt;
                 &lt;/label&gt;
                 &lt;label&gt;
                   Start
                   &lt;input type="text" class="form-control aa-time-input"
                          maxlength="5" placeholder="HH:MM" ng-model="s.start_time" ng-readonly="a.running"
-                         ng-focus="c.timeFocus(s, 'start_time')" ng-blur="c.timeBlur(s, 'start_time')"/&gt;
+                         ng-focus="c.timeFocus(s, 'start_time')" ng-blur="c.commitShift(a, s, 'start_time')"/&gt;
                 &lt;/label&gt;
                 &lt;label&gt;
                   End
                   &lt;input type="text" class="form-control aa-time-input"
                          maxlength="5" placeholder="HH:MM" ng-model="s.end_time" ng-readonly="a.running"
-                         ng-focus="c.timeFocus(s, 'end_time')" ng-blur="c.timeBlur(s, 'end_time')"/&gt;
+                         ng-focus="c.timeFocus(s, 'end_time')" ng-blur="c.commitShift(a, s, 'end_time')"/&gt;
                 &lt;/label&gt;
                 &lt;span class="aa-shift-pill aa-default-pill" ng-if="s.is_default"&gt;Default&lt;/span&gt;
                 &lt;span class="aa-shift-actions" ng-if="!a.running"&gt;
-                  &lt;button class="btn btn-xs btn-primary" ng-click="c.saveShift(a, s)"&gt;Save&lt;/button&gt;
                   &lt;button class="btn btn-xs btn-default"
                           ng-if="!s.is_default &amp;&amp; !s._confirmDelete"
                           ng-click="s._confirmDelete = true"&gt;Delete&lt;/button&gt;
@@ -2077,12 +2099,11 @@
                   &lt;span class="aa-break-label"&gt;Break&lt;/span&gt;
                   &lt;input type="text" class="form-control aa-time-input"
                          maxlength="5" placeholder="HH:MM" ng-model="b.start_time" ng-readonly="a.running"
-                         ng-focus="c.timeFocus(b, 'start_time')" ng-blur="c.timeBlur(b, 'start_time')"/&gt;
+                         ng-focus="c.timeFocus(b, 'start_time')" ng-blur="c.commitBreak(a, s, b, 'start_time')"/&gt;
                   &lt;span&gt;to&lt;/span&gt;
                   &lt;input type="text" class="form-control aa-time-input"
                          maxlength="5" placeholder="HH:MM" ng-model="b.end_time" ng-readonly="a.running"
-                         ng-focus="c.timeFocus(b, 'end_time')" ng-blur="c.timeBlur(b, 'end_time')"/&gt;
-                  &lt;button class="btn btn-xs btn-primary" ng-if="!a.running" ng-click="c.saveBreak(a, s, b)"&gt;Save&lt;/button&gt;
+                         ng-focus="c.timeFocus(b, 'end_time')" ng-blur="c.commitBreak(a, s, b, 'end_time')"/&gt;
                   &lt;button class="btn btn-xs btn-default" ng-if="!a.running" ng-click="c.deleteBreak(a, s, b)"&gt;Remove&lt;/button&gt;
                 &lt;/div&gt;
                 &lt;button class="btn btn-xs btn-default aa-add-break"

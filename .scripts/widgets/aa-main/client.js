@@ -1,8 +1,15 @@
-api.controller = function($scope, $interval) {
+api.controller = function($scope, $interval, $timeout) {
     var c = this;
     // Open on the first assigner (index 0). Only land on the "New assigner"
     // tab (index -1) when there are no assigners yet.
-    c.activeTab = (c.data && c.data.assigners && c.data.assigners.length) ? 0 : -1;
+    function defaultTab() {
+        return (c.data && c.data.assigners && c.data.assigners.length) ? 0 : -1;
+    }
+    c.activeTab = defaultTab();
+    // The ng-repeat tabs register a tick after the static "New assigner" tab,
+    // so on first paint the tabset can latch onto that last tab. Re-assert the
+    // intended tab once the repeated tabs exist.
+    $timeout(function() { c.activeTab = defaultTab(); });
 
     // Per-assigner expanded/collapsed state for the collapsible sections.
     // Kept on the controller (not c.data) so it survives the c.data
@@ -84,8 +91,20 @@ api.controller = function($scope, $interval) {
         });
     };
 
-    c.saveShift = function(a, s) {
-        if (!s.name || !isValidHhmm(s.start_time) || !isValidHhmm(s.end_time)) return;
+    // Auto-save a shift when one of its fields loses focus. `prop` names the
+    // field just edited: 'start_time'/'end_time' get normalized (and reverted
+    // if invalid); a blank name reverts to the previous value. Nothing is
+    // persisted unless the whole row is valid.
+    c.commitShift = function(a, s, prop) {
+        var field = prop || 'name';
+        if (prop === 'start_time' || prop === 'end_time') {
+            c.timeBlur(s, prop);
+        } else if (!s.name && s['$prev_name']) {
+            s.name = s['$prev_name'];
+        }
+        // Unchanged since focus (or an invalid edit that just reverted) — skip.
+        if (s['$prev_' + field] === s[field]) return;
+        if (!s.name || normalizeTime(s.start_time) === null || normalizeTime(s.end_time) === null) return;
         c.data.action = 'updateShift';
         c.data.shiftSysId = s.sys_id;
         c.data.name  = s.name;
@@ -108,8 +127,11 @@ api.controller = function($scope, $interval) {
         c.server.update();
     };
 
-    c.saveBreak = function(a, s, b) {
-        if (!isValidHhmm(b.start_time) || !isValidHhmm(b.end_time)) return;
+    // Auto-save a break when one of its time fields loses focus.
+    c.commitBreak = function(a, s, b, prop) {
+        c.timeBlur(b, prop);
+        if (b['$prev_' + prop] === b[prop]) return; // unchanged or reverted
+        if (normalizeTime(b.start_time) === null || normalizeTime(b.end_time) === null) return;
         c.data.action = 'updateBreak';
         c.data.breakSysId = b.sys_id;
         c.data.start = b.start_time;
