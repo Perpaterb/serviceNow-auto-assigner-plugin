@@ -4,6 +4,10 @@
     var isAdmin   = gs.hasRole('admin');
     var isManager = gs.hasRole(SCOPE + 'queue_manager');
 
+    // The scheduled job that runs the engine (see generate_engine.py).
+    var ENGINE_JOB_SYS_ID = '4a6860f1fc1b9fe361220028cfb23965';
+    var ENGINE_JOB_NAME   = 'Auto-Assigner Engine';
+
     // Type-list config, declared up here so it's initialized before the
     // main loop runs (function declarations hoist; var initializations
     // do not).
@@ -50,6 +54,10 @@
     data.isManager        = isManager;
     data.instanceNowDisplay = formatNowInSystemTz();
     data.availableGroups  = getAvailableGroups();
+    // Absolute epoch-ms of the next scheduled engine fire. The countdown uses
+    // this (shared by all assigners — one job drives them) so it stays correct
+    // even right after an assigner is started, when its own last_run is stale.
+    data.engineNextRunMs  = getEngineNextRunMs();
     data.assigners        = [];
 
     // The instance's wall-clock time formatted in the system default TZ
@@ -65,6 +73,44 @@
         } catch (e) {
             return (new GlideDateTime()).getDisplayValue();
         }
+    }
+
+    // When does the engine scheduled job next fire? The live value is held by
+    // the scheduler in sys_trigger; fall back to the job record's own
+    // next_action. Returns absolute epoch ms, or null if it can't be read.
+    function getEngineNextRunMs() {
+        var ms = triggerNextActionMs('document_key', ENGINE_JOB_SYS_ID);
+        if (ms) return ms;
+        ms = triggerNextActionMs('name', ENGINE_JOB_NAME);
+        if (ms) return ms;
+        try {
+            var job = new GlideRecord('sysauto_script');
+            if (job.get(ENGINE_JOB_SYS_ID) && job.getValue('next_action')) {
+                var jms = job.next_action.dateNumericValue();
+                if (jms) return jms;
+            }
+        } catch (e) {
+            gs.warn('[aa-main] could not read sysauto_script next_action: ' + e);
+        }
+        return null;
+    }
+
+    function triggerNextActionMs(field, value) {
+        try {
+            var t = new GlideRecord('sys_trigger');
+            t.addQuery(field, value);
+            t.addNotNullQuery('next_action');
+            t.orderBy('next_action');
+            t.setLimit(1);
+            t.query();
+            if (t.next()) {
+                var ms = t.next_action.dateNumericValue();
+                if (ms) return ms;
+            }
+        } catch (e) {
+            gs.warn('[aa-main] sys_trigger read failed (' + field + '): ' + e);
+        }
+        return null;
     }
 
     var ar = new GlideRecord(SCOPE + 'assigner');

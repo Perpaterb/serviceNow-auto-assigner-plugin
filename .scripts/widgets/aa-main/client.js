@@ -260,9 +260,13 @@ api.controller = function($scope, $interval, $timeout) {
     function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
     function formatCountdown(assigner, nowMs) {
-        if (!assigner.lastRunMs) return null;
-        var elapsed = nowMs - assigner.lastRunMs;
-        var remaining = CADENCE_MS - elapsed;
+        // Prefer the scheduler's real next-fire time (shared across assigners);
+        // fall back to estimating from this assigner's last run + cadence.
+        var target = (c.data && c.data.engineNextRunMs)
+            ? c.data.engineNextRunMs
+            : (assigner.lastRunMs ? assigner.lastRunMs + CADENCE_MS : null);
+        if (!target) return null;
+        var remaining = target - nowMs;
         if (remaining <= 0) return 'any moment…';
         var secs = Math.floor(remaining / 1000);
         var m = Math.floor(secs / 60);
@@ -275,6 +279,11 @@ api.controller = function($scope, $interval, $timeout) {
             if (!response || !response.data) return;
             if (response.data.instanceNowDisplay) {
                 c.serverClockSkewMs = computeInstanceSkew(response.data.instanceNowDisplay);
+            }
+            // Keep the next-run time fresh so the countdown re-syncs (and
+            // unsticks from "any moment…") shortly after each engine fire.
+            if (typeof response.data.engineNextRunMs !== 'undefined') {
+                c.data.engineNextRunMs = response.data.engineNextRunMs;
             }
             if (!response.data.assigners) return;
             var fresh = {};
