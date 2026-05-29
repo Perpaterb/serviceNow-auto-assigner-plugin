@@ -34,6 +34,36 @@
     });
     updateCountdowns();
     updateInstanceClock();
+    initRunTimeDates();
+
+    // AngularJS `&lt;input type=time&gt;` needs a Date object on ng-model, not an
+    // HH:MM string. We keep our string fields as the source of truth and
+    // mirror them onto Date instances the picker can bind to.
+    function initRunTimeDates() {
+        if (!c.data || !c.data.assigners) return;
+        for (var i = 0; i &lt; c.data.assigners.length; i++) {
+            var a = c.data.assigners[i];
+            a.run_start_date = hhmmToDate(a.run_start_time);
+            a.run_end_date   = hhmmToDate(a.run_end_time);
+        }
+    }
+
+    function hhmmToDate(s) {
+        if (!s) return null;
+        var m = ('' + s).match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        var d = new Date();
+        d.setHours(parseInt(m[1], 10));
+        d.setMinutes(parseInt(m[2], 10));
+        d.setSeconds(0);
+        d.setMilliseconds(0);
+        return d;
+    }
+
+    function dateToHhmm(d) {
+        if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+        return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    }
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -112,10 +142,16 @@
     };
 
     c.setRunTime = function(a, which) {
+        var d = which === 'start' ? a.run_start_date : a.run_end_date;
+        var hhmm = dateToHhmm(d);
+        if (!hhmm) return;
+        // Mirror back to the string field so other parts of the UI stay in sync.
+        if (which === 'start') a.run_start_time = hhmm;
+        else                   a.run_end_time   = hhmm;
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
-        c.data.value = which === 'start' ? a.run_start_time : a.run_end_time;
+        c.data.value = hhmm;
         c.server.update();
     };
 
@@ -382,9 +418,23 @@
     data.user             = gs.getUserDisplayName();
     data.isAdmin          = isAdmin;
     data.isManager        = isManager;
-    data.instanceNow      = (new GlideDateTime()).getDisplayValue(); // user-TZ wall clock snapshot
-    data.instanceNowMs    = (new GlideDateTime()).getNumericValue(); // UTC ms, for client-side ticking
+    data.instanceNowDisplay = formatNowInSystemTz();
     data.assigners        = [];
+
+    // The instance's wall-clock time formatted in the system default TZ
+    // (NF6), not the admin's session TZ. Falls back to the session display
+    // value if Java reflection is locked down on this instance.
+    function formatNowInSystemTz() {
+        try {
+            var tzName = gs.getProperty('glide.sys.default.tz', 'UTC');
+            var tz = Packages.java.util.TimeZone.getTimeZone(tzName);
+            var df = new Packages.java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+            df.setTimeZone(tz);
+            return '' + df.format(new Packages.java.util.Date());
+        } catch (e) {
+            return (new GlideDateTime()).getDisplayValue();
+        }
+    }
 
     var ar = new GlideRecord(SCOPE + 'assigner');
     ar.orderBy('name');
@@ -420,12 +470,6 @@
             // R5 — run window
             run_start_time: hhmmFromTime(ar.run_start_time.getDisplayValue()),
             run_end_time:   hhmmFromTime(ar.run_end_time.getDisplayValue()),
-            // Debug visibility — surfaces what the platform actually stores so
-            // we can diagnose the empty time-picker. Remove once stable.
-            _debug_run_start_raw:     '' + ar.getValue('run_start_time'),
-            _debug_run_start_display: '' + ar.run_start_time.getDisplayValue(),
-            _debug_run_end_raw:       '' + ar.getValue('run_end_time'),
-            _debug_run_end_display:   '' + ar.run_end_time.getDisplayValue(),
             stop_overnight: ar.stop_overnight == true,
             // R7 — reassign-responded master + eligibility flags
             reassign_responded:                  ar.reassign_responded == true,
@@ -776,7 +820,7 @@
         <template>&lt;div class="aa-shell"&gt;
   &lt;div class="aa-topbar"&gt;
     &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
-    &lt;div class="aa-instance-clock" title="Current instance time"&gt;
+    &lt;div class="aa-instance-clock" title="Current instance time (system TZ)"&gt;
       &lt;i class="fa fa-clock-o"&gt;&lt;/i&gt;
       Instance time: {{c.instanceClockDisplay}}
     &lt;/div&gt;
@@ -871,19 +915,17 @@
           &lt;div class="aa-settings-section"&gt;
             &lt;h4&gt;Active window&lt;/h4&gt;
             &lt;p class="aa-help"&gt;Tickets are only assigned (or unassigned) inside the active window. Outside it the assigner is idle even when Running is on.&lt;/p&gt;
-            &lt;pre class="aa-debug"&gt;DEBUG start raw=&amp;quot;{{a._debug_run_start_raw}}&amp;quot; display=&amp;quot;{{a._debug_run_start_display}}&amp;quot; parsed=&amp;quot;{{a.run_start_time}}&amp;quot;
-DEBUG end   raw=&amp;quot;{{a._debug_run_end_raw}}&amp;quot;   display=&amp;quot;{{a._debug_run_end_display}}&amp;quot;   parsed=&amp;quot;{{a.run_end_time}}&amp;quot;&lt;/pre&gt;
             &lt;div class="aa-run-row"&gt;
               &lt;label&gt;
                 Start
                 &lt;input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_start_time"
+                       ng-model="a.run_start_date"
                        ng-change="c.setRunTime(a, 'start')"/&gt;
               &lt;/label&gt;
               &lt;label&gt;
                 End
                 &lt;input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_end_time"
+                       ng-model="a.run_end_date"
                        ng-change="c.setRunTime(a, 'end')"/&gt;
               &lt;/label&gt;
               &lt;label class="aa-check"&gt;

@@ -1,7 +1,7 @@
 <div class="aa-shell">
   <div class="aa-topbar">
     <h2>Auto-Assigner</h2>
-    <div class="aa-instance-clock" title="Current instance time">
+    <div class="aa-instance-clock" title="Current instance time (system TZ)">
       <i class="fa fa-clock-o"></i>
       Instance time: {{c.instanceClockDisplay}}
     </div>
@@ -96,19 +96,17 @@
           <div class="aa-settings-section">
             <h4>Active window</h4>
             <p class="aa-help">Tickets are only assigned (or unassigned) inside the active window. Outside it the assigner is idle even when Running is on.</p>
-            <pre class="aa-debug">DEBUG start raw=&quot;{{a._debug_run_start_raw}}&quot; display=&quot;{{a._debug_run_start_display}}&quot; parsed=&quot;{{a.run_start_time}}&quot;
-DEBUG end   raw=&quot;{{a._debug_run_end_raw}}&quot;   display=&quot;{{a._debug_run_end_display}}&quot;   parsed=&quot;{{a.run_end_time}}&quot;</pre>
             <div class="aa-run-row">
               <label>
                 Start
                 <input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_start_time"
+                       ng-model="a.run_start_date"
                        ng-change="c.setRunTime(a, 'start')"/>
               </label>
               <label>
                 End
                 <input type="time" class="form-control aa-time-input"
-                       ng-model="a.run_end_time"
+                       ng-model="a.run_end_date"
                        ng-change="c.setRunTime(a, 'end')"/>
               </label>
               <label class="aa-check">

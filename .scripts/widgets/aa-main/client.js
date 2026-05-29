@@ -31,6 +31,36 @@ api.controller = function($scope, $interval) {
     });
     updateCountdowns();
     updateInstanceClock();
+    initRunTimeDates();
+
+    // AngularJS `<input type=time>` needs a Date object on ng-model, not an
+    // HH:MM string. We keep our string fields as the source of truth and
+    // mirror them onto Date instances the picker can bind to.
+    function initRunTimeDates() {
+        if (!c.data || !c.data.assigners) return;
+        for (var i = 0; i < c.data.assigners.length; i++) {
+            var a = c.data.assigners[i];
+            a.run_start_date = hhmmToDate(a.run_start_time);
+            a.run_end_date   = hhmmToDate(a.run_end_time);
+        }
+    }
+
+    function hhmmToDate(s) {
+        if (!s) return null;
+        var m = ('' + s).match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        var d = new Date();
+        d.setHours(parseInt(m[1], 10));
+        d.setMinutes(parseInt(m[2], 10));
+        d.setSeconds(0);
+        d.setMilliseconds(0);
+        return d;
+    }
+
+    function dateToHhmm(d) {
+        if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+        return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    }
 
     function updateCountdowns() {
         if (!c.data || !c.data.assigners) return;
@@ -109,10 +139,16 @@ api.controller = function($scope, $interval) {
     };
 
     c.setRunTime = function(a, which) {
+        var d = which === 'start' ? a.run_start_date : a.run_end_date;
+        var hhmm = dateToHhmm(d);
+        if (!hhmm) return;
+        // Mirror back to the string field so other parts of the UI stay in sync.
+        if (which === 'start') a.run_start_time = hhmm;
+        else                   a.run_end_time   = hhmm;
         c.data.action = 'setRunTime';
         c.data.assignerSysId = a.sys_id;
         c.data.which = which;
-        c.data.value = which === 'start' ? a.run_start_time : a.run_end_time;
+        c.data.value = hhmm;
         c.server.update();
     };
 
