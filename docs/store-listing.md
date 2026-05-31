@@ -17,10 +17,11 @@ automatically, on a schedule, with shifts and round-robin balancing.
 
 ## Long description
 
-Auto-Assigner takes the manual triage out of shared queues. Point it at an
-assignment group, mark who's working, and it hands each new unassigned ticket to
-the next available analyst in turn — evenly, around the clock or only during the
-hours you choose.
+Auto-Assigner is a scoped ServiceNow application that takes the manual triage
+out of shared queues. Point it at a ServiceNow assignment group, mark who's
+working, and it hands each new unassigned ticket to the next available analyst
+in turn — evenly, around the clock or only during the hours you choose. It
+installs straight into your ServiceNow instance with no external dependencies.
 
 It understands real teams: analysts work **shifts** with **breaks**, the assigner
 runs inside an **active window**, and only people who are on shift right now
@@ -44,7 +45,8 @@ tidy read-only view.
 - Optional auto-unassign of tickets held by not-working analysts
 - Activity log of today's assignments and unassignments
 - Role-based access: managers configure, everyone else reads
-- Works with any task-based table (Incident, Request, Change, HR, CSM, and more)
+- Works with any ServiceNow task-based table (Incident, Request, Change, HR, CSM, and more)
+- Native scoped ServiceNow app — runs entirely on-platform, no external services
 
 ## Key features (bullets for the feature list)
 

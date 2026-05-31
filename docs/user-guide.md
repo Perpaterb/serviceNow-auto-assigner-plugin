@@ -1,10 +1,15 @@
-# Auto-Assigner — User Guide
+# Auto-Assigner for ServiceNow — User Guide
 
-Auto-Assigner watches an assignment group's queue and hands each new, unassigned
-ticket to an available analyst in turn, so work is shared evenly without anyone
-having to triage by hand. You decide which ticket types it covers, who's
-working, what hours it runs, and when (if ever) it should pull tickets back off
-people who have stepped away.
+Auto-Assigner is a scoped **ServiceNow** application. It watches a ServiceNow
+assignment group's queue and hands each new, unassigned ticket to an available
+analyst in turn, so work is shared evenly without anyone having to triage by
+hand. You decide which ServiceNow ticket types it covers, who's working, what
+hours it runs, and when (if ever) it should pull tickets back off people who
+have stepped away.
+
+Everything runs inside your ServiceNow instance — the configuration screens are
+a ServiceNow Service Portal page, and the assignment engine is a ServiceNow
+scheduled job.
 
 This guide walks through everyday use. For a quick reference of who can do what,
 jump to [Roles & access](#roles--access).
@@ -13,8 +18,8 @@ jump to [Roles & access](#roles--access).
 
 ## Getting started
 
-Open the Auto-Assigner page in the Service Portal (your administrator will give
-you the link, typically `/sp?id=auto-assigner`).
+Open the Auto-Assigner page in the ServiceNow Service Portal (your ServiceNow
+administrator will give you the link, typically `/sp?id=auto-assigner`).
 
 Each auto-assigner appears as its own **tab** across the top. Click a tab to see
 that assigner; the page opens on the first one.
@@ -174,7 +179,7 @@ It's a quick way to confirm the assigner is doing what you expect.
 
 | You are… | What you see |
 |---|---|
-| **System administrator** | Full control of every assigner on the instance. |
+| **ServiceNow system administrator** | Full control of every assigner on the instance. |
 | **Queue manager** *(role `x_1578378_aa.queue_manager`)* **and** a member of the group | Full control of that group's assigner(s): start/stop, settings, shifts, roster, colours, create and delete. |
 | **A member of the group** (no manager role) | A read-only view: the assigner tabs, the Working/Not-working roster with each person's shift, and Activity today. |
 
