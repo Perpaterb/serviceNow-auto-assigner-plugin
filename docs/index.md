@@ -22,4 +22,3 @@ return them to the queue for someone who's on the clock.
 ---
 
 - **[User Guide](user-guide.md)** — how to set up and run an auto-assigner.
-- **[Store Listing](store-listing.md)** — marketing copy for the ServiceNow Store page.
