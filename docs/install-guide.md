@@ -1,5 +1,14 @@
 # ServiceNow Auto-Assigner — Installation Guide
 
+<p align="center">
+  <iframe width="640" height="360"
+          src="https://www.youtube.com/embed/Hyl1sOaboBE"
+          title="ServiceNow Auto-Assigner — installation walkthrough"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>
+</p>
+
 ServiceNow Auto-Assigner is delivered through **source control**: you point your
 ServiceNow instance at a Git repository and import the scoped application from
 it. This guide takes you from a clean instance to a running app.
@@ -68,13 +77,16 @@ branch** (`main`) — you'll need both in the next step.
 
 ## 3. Import the app into ServiceNow
 
-1. In your ServiceNow instance, open **Studio** (filter navigator → *Studio*).
-2. Click **Import From Source Control**.
+1. In your ServiceNow instance, open **Studio** (in the navigator, search for and
+   open *Studio*). Studio's home screen lists your applications.
+2. Click **Create** (top-right) and choose **Import app** — then select to import
+   **from source control**. *(On older instances this same action appears as an
+   **Import From Source Control** button.)*
 3. Enter:
    - **URL** — your repository's HTTPS URL from step 2.
    - **Credential** — the secure connection from step 1.
    - **Branch** — `main`.
-4. Click **Import**. ServiceNow pulls the scoped application (**Auto Assigner**,
+4. Confirm/import. ServiceNow pulls the scoped application (**Auto Assigner**,
    scope `x_1578378_aa`) and creates everything it needs: tables, ACLs, the
    `x_1578378_aa.queue_manager` role, the Service Portal page and widget, and the
    assignment-engine scheduled job.
@@ -82,6 +94,12 @@ branch** (`main`) — you'll need both in the next step.
 
 > Already linked this app on the instance before? Use **Apply Remote Changes**
 > instead, to pull the latest commits.
+
+> **Finding your applications:** to see the list of apps on the instance — to
+> confirm the import or open Auto-Assigner again later — open **Studio** (its
+> home screen lists every app), or in the navigator go to **All → My Company
+> Applications** (also reachable by searching *Applications*; the underlying
+> list is **Custom Applications**, `sys_app_list`).
 
 ---
 
