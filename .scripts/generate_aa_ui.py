@@ -33,7 +33,7 @@ TIMESTAMP = "2026-05-29 04:00:00"
 WIDGET_ID = "aa-main"
 WIDGET_NAME = "Auto-Assigner Main"
 PAGE_ID = "auto-assigner"
-PAGE_TITLE = "Auto-Assigner"
+PAGE_TITLE = "ServiceNow Auto-Assigner"
 
 
 def sys_id(key: str) -> str:
@@ -82,7 +82,7 @@ def render_widget() -> str:
         <css>{css}</css>
         <data_table>sp_instance</data_table>
         <demo_data/>
-        <description>Manager UI for the Auto-Assigner: tabs of assigners, status, Start/Stop, roster lists.</description>
+        <description>Manager UI for ServiceNow Auto-Assigner: tabs of assigners, status, Start/Stop, roster lists.</description>
         <docs/>
         <field_list/>
         <has_preview>false</has_preview>

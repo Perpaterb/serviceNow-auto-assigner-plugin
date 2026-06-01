@@ -1,6 +1,7 @@
-# Auto-Assigner for ServiceNow — User Guide
+# ServiceNow Auto-Assigner — User Guide
 
-Auto-Assigner is a scoped **ServiceNow** application. It watches a ServiceNow
+ServiceNow Auto-Assigner is a scoped application for the **ServiceNow** platform.
+It watches a ServiceNow
 assignment group's queue and hands each new, unassigned ticket to an available
 analyst in turn, so work is shared evenly without anyone having to triage by
 hand. You decide which ServiceNow ticket types it covers, who's working, what
@@ -18,7 +19,7 @@ jump to [Roles & access](#roles--access).
 
 ## Getting started
 
-Open the Auto-Assigner page in the ServiceNow Service Portal (your ServiceNow
+Open the ServiceNow Auto-Assigner page in the ServiceNow Service Portal (your ServiceNow
 administrator will give you the link, typically `/sp?id=auto-assigner`).
 
 Each auto-assigner appears as its own **tab** across the top. Click a tab to see

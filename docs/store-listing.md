@@ -8,7 +8,7 @@ from [screenshots/](screenshots/). Trim to fit each field's character limit.
 
 ## App name
 
-Auto-Assigner
+ServiceNow Auto-Assigner
 
 ## Short summary (one line)
 
@@ -17,7 +17,7 @@ automatically, on a schedule, with shifts and round-robin balancing.
 
 ## Long description
 
-Auto-Assigner is a scoped ServiceNow application that takes the manual triage
+ServiceNow Auto-Assigner is a scoped application that takes the manual triage
 out of shared queues. Point it at a ServiceNow assignment group, mark who's
 working, and it hands each new unassigned ticket to the next available analyst
 in turn — evenly, around the clock or only during the hours you choose. It

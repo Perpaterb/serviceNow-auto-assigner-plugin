@@ -14,7 +14,7 @@
         <screen_size_sm>true</screen_size_sm>
         <screen_size_md>true</screen_size_md>
         <screen_size_lg>true</screen_size_lg>
-        <sp_page display_value="Auto-Assigner">09a9c99d6e0a1454c6004fb3aa0f9666</sp_page>
+        <sp_page display_value="ServiceNow Auto-Assigner">09a9c99d6e0a1454c6004fb3aa0f9666</sp_page>
         <subheader>false</subheader>
         <sys_class_name>sp_container</sys_class_name>
         <sys_created_by>admin</sys_created_by>

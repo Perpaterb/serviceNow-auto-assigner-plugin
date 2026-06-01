@@ -843,7 +843,7 @@
 </css>
         <data_table>sp_instance</data_table>
         <demo_data/>
-        <description>Manager UI for the Auto-Assigner: tabs of assigners, status, Start/Stop, roster lists.</description>
+        <description>Manager UI for ServiceNow Auto-Assigner: tabs of assigners, status, Start/Stop, roster lists.</description>
         <docs/>
         <field_list/>
         <has_preview>false</has_preview>
@@ -1837,10 +1837,10 @@
         <sys_scope display_value="Auto Assigner">7d223776834583509c075cc0deaad308</sys_scope>
         <template>&lt;div class="aa-shell"&gt;
   &lt;div class="aa-topbar"&gt;
-    &lt;h2&gt;Auto-Assigner&lt;/h2&gt;
+    &lt;h2&gt;ServiceNow Auto-Assigner&lt;/h2&gt;
     &lt;div class="aa-topbar-right"&gt;
       &lt;a class="aa-help-link" ng-href="{{c.helpUrl}}" target="_blank" rel="noopener"
-         title="Open the Auto-Assigner documentation in a new tab"&gt;
+         title="Open the ServiceNow Auto-Assigner documentation in a new tab"&gt;
         &lt;i class="fa fa-question-circle"&gt;&lt;/i&gt; Help
       &lt;/a&gt;
       &lt;div class="aa-instance-clock" title="Current instance time (system TZ)"&gt;
