@@ -22,8 +22,9 @@ an assignment-group member.
 **So that** I have visibility into how my work is distributed.
 - AC1: Opening the app shows only auto-assigners for groups I belong to.
 - AC2: Without `x_1578378_aa.queue_manager`, I see a **stripped read-only
-  summary** — status (running/stopped) and the current roster (Working /
-  Not-working with shift names) — and no edit affordances.
+  view** — the assigner tabs, status (running/stopped), the current roster
+  (Working / Not-working with shift names), and today's activity log — and no
+  edit affordances (no Start/Stop, no settings, no create tab).
 
 ### A3 — Configure only my groups
 **As** a manager
@@ -52,11 +53,40 @@ an assignment-group member.
 - AC1: Creating a second assigner on a group already covered is allowed.
 - AC2: The two run independently with separate config and rotation state.
 
-### B3 — Two pages per assigner
+### B3 — Two views per assigner
 **As** a manager
-**I want** each assigner to have Main and Shift setup pages
-**So that** configuration is organised.
-- AC1: Each assigner exposes exactly Main and Shift setup.
+**I want** each assigner to have a Main view and a Shifts & settings view
+**So that** everyday roster control is separate from configuration.
+- AC1: Each assigner exposes a Main view (status, roster, run window, ticket
+  types, reassign, activity) and a Shifts & settings view reached from the
+  header.
+- AC2: Shifts & settings holds shift/break management plus assigner-level
+  settings (rename, tab colour, delete).
+
+### B4 — Rename an auto-assigner
+**As** a manager
+**I want** to rename an assigner from its settings
+**So that** the tab label reflects what it's for.
+- AC1: A name field on Shifts & settings updates the assigner's name on save.
+- AC2: The tab heading reflects the new name.
+
+### B5 — Delete an auto-assigner
+**As** a manager
+**I want** to delete an assigner I no longer need
+**So that** stale assigners don't clutter the tabs.
+- AC1: Delete requires an explicit in-place confirmation before it happens.
+- AC2: Deleting removes the assigner and everything tied to it — its shifts and
+  breaks, roster entries, ticket-type / reassign-type / reassign-state
+  selections, and activity log.
+- AC3: After deletion the view falls back to another assigner (or the create
+  tab if none remain).
+
+### B6 — Colour-code a tab
+**As** a manager
+**I want** to tint an assigner's tab and panel with a pastel colour
+**So that** I can tell multiple assigners apart at a glance.
+- AC1: A colour picker offers a fixed pastel palette plus a "no colour" option.
+- AC2: The choice tints both the tab label and the assigner panel, and persists.
 
 ---
 
@@ -68,6 +98,8 @@ an assignment-group member.
 **So that** I can model how my team works.
 - AC1: A shift has a name, start time, end time.
 - AC2: A shift can have zero, one, or multiple breaks (each start + end).
+- AC2a: Shift and break times are entered as 24-hour **HH:MM** (bare `HHMM`
+  normalized; invalid input reverts), and edits save automatically.
 - AC3: Shifts are reusable across analysts **on this assigner only** — shifts
   are scoped to one auto-assigner and not shared globally.
 - AC4: Shift create / edit / delete is only permitted while the assigner is
@@ -133,6 +165,8 @@ an assignment-group member.
 **So that** I know and control whether the assigner is active.
 - AC1: Status clearly shows running vs stopped.
 - AC2: Stopping halts all assignment immediately.
+- AC3: While running, a live "next run in …" countdown to the next engine
+  cycle is shown, driven by the scheduled job's real next-fire time.
 
 ### E2 — Daily run window
 **As** a manager
@@ -140,6 +174,9 @@ an assignment-group member.
 **So that** it only assigns during chosen hours even if switched on earlier.
 - AC1: With the assigner on but before start time, no tickets are assigned.
 - AC2: After end time, no further tickets are assigned that day.
+- AC3: Times are entered as 24-hour **HH:MM**; a bare `HHMM` is normalized
+  (`0900` → `09:00`, `2400` → `00:00`) and anything invalid reverts to the
+  previous value.
 
 ### E3 — Stop running overnight
 **As** a manager
@@ -231,3 +268,10 @@ on the ticket's current state
 - AC1: All assigners run **sequentially inside one Scheduled Job**, so no two
   are active at the same instant and a ticket assigned by one cannot be
   re-picked by another in the same cycle.
+
+### I4 — See who's next
+**As** a manager
+**I want** to see the current round-robin order
+**So that** I can predict and verify how the next tickets will be shared.
+- AC1: A panel lists the currently-eligible analysts in next-up order.
+- AC2: Each entry shows the analyst's shift and when they were last assigned.

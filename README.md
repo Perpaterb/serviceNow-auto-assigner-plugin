@@ -58,18 +58,15 @@ auto-assigner/
 │   ├── USER_STORIES.md        ← epics and stories with acceptance criteria
 │   ├── DATA_MODEL.md          ← tables, fields, relationships
 │   ├── ARCHITECTURE.md        ← engine logic, scheduling, security model
-│   ├── OPEN_QUESTIONS.md      ← decisions needed before/while building
 │   └── GLOSSARY.md            ← shared terminology
 └── (source added as the scoped app is built)
 ```
 
 ## Getting started (with Claude in the terminal)
 
-1. Read `docs/OPEN_QUESTIONS.md` first and resolve the blocking decisions.
-2. Work through `docs/USER_STORIES.md` epic by epic.
-3. Use `docs/DATA_MODEL.md` and `docs/ARCHITECTURE.md` as the build contract.
+1. Work through `docs/USER_STORIES.md` epic by epic.
+2. Use `docs/DATA_MODEL.md` and `docs/ARCHITECTURE.md` as the build contract.
 
 ## Status
 
-Pre-build. Specification complete — all open questions resolved
-(see `OPEN_QUESTIONS.md`).
+Built. Specification complete and all design decisions resolved.
